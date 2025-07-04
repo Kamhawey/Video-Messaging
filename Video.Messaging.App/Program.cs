@@ -1,7 +1,7 @@
 using Blazored.Toast;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Video.Messaging.App;
+using SharedClassLibrary;
 using Video.Messaging.App.Extensions;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);

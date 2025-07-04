@@ -1,8 +1,12 @@
-﻿@using Video.Messaging.App.Layout
-<Router AppAssembly="@typeof(App).Assembly">
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
+@using SharedClassLibrary
+@using SharedClassLibrary.Layout
+@using SharedClassLibrary.Pages
+
+<Router AppAssembly="@typeof(SharedClassLibrary.App).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
     <NotFound>
         <PageTitle>Not found</PageTitle>
