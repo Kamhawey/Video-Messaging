@@ -1,0 +1,114 @@
+﻿@page "/"
+@using Video.Messaging.App.Models
+@using Video.Messaging.App.Services
+@using Video.Messaging.App.Components
+@inject IVideoService VideoService
+@inject IVideoPlayerService VideoPlayerService
+
+<PageTitle>Video Messaging</PageTitle>
+
+<div class="video-messaging-container">
+    <header class="app-header">
+        <h1>@(_currentMessageType == MessageType.Incoming ? "Incoming Messages" : "Outgoing Messages")</h1>
+    </header>
+
+    <div class="message-type-selector">
+        <button class="type-btn @(_currentMessageType == MessageType.Incoming ? "active" : "")"
+                @onclick="() => SetMessageType(MessageType.Incoming)">
+            Incoming
+        </button>
+        <button class="type-btn @(_currentMessageType == MessageType.Outgoing ? "active" : "")"
+                @onclick="() => SetMessageType(MessageType.Outgoing)">
+            Outgoing
+        </button>
+    </div>
+
+    <div class="message-content">
+        @if (_currentMessageType == MessageType.Incoming)
+        {
+            @if (_incomingMessages.Any())
+            {
+                @*  <div class="message-list">
+                    @foreach (var message in _incomingMessages)
+                    {
+                        <div class="message-item" @onclick="() => SelectIncomingMessage(message)">
+                            <span>@message.SenderName - @message.CreatedAt.ToString("g")</span>
+                        </div>
+                    }
+                </div> *@
+                @if (_selectedIncomingMessage != null)
+                {
+                    <VideoPlayer VideoUrl="@_selectedIncomingMessage.VideoUrl"
+                                 SenderName="@_selectedIncomingMessage.SenderName"
+                                 OnPlaybackStateChanged="HandlePlaybackStateChanged" />
+
+                }
+            }
+            else
+            {
+                <div class="no-message">
+                    <img src="/images/no-incoming-message.png" alt="No Incoming Message" class="no-message-image" />
+                    <p>No incoming messages</p>
+                </div>
+            }
+        }
+        else
+        {
+            <VideoRecorder SenderName="Mohamed"
+                           OnVideoRecorded="HandleVideoRecorded"
+                           OnVideoSent="HandleVideoSent" />
+        }
+    </div>
+</div>
+
+@code {
+    private MessageType _currentMessageType = MessageType.Incoming;
+    private List<VideoMessage> _incomingMessages = new();
+    private List<VideoMessage> _outgoingMessages = new();
+    private VideoMessage? _selectedIncomingMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMessages();
+    }
+
+    private async Task LoadMessages()
+    {
+        var allMessages = await VideoService.GetVideoMessagesAsync();
+        _incomingMessages = allMessages.Where(m => m.IsIncoming).ToList();
+        _outgoingMessages = allMessages.Where(m => !m.IsIncoming).ToList();
+        _selectedIncomingMessage = _incomingMessages.LastOrDefault();
+        StateHasChanged();
+    }
+
+    private void SetMessageType(MessageType type)
+    {
+        _currentMessageType = type;
+        StateHasChanged();
+    }
+
+    private void SelectIncomingMessage(VideoMessage message)
+    {
+        _selectedIncomingMessage = message;
+        StateHasChanged();
+    }
+
+    private async Task HandlePlaybackStateChanged(PlaybackState state)
+    {
+        // Handle playback state changes if needed
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleVideoRecorded(VideoMessage videoMessage)
+    {
+        // Handle video recorded event
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleVideoSent(VideoMessage videoMessage)
+    {
+        _outgoingMessages.Add(videoMessage);
+        await LoadMessages(); // Refresh incoming messages to include the new video
+        StateHasChanged();
+    }
+}

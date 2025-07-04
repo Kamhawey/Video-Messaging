@@ -1,0 +1,249 @@
+﻿@using Blazored.Toast.Services
+@inject IVideoPlayerService VideoPlayerService
+@inject IJSVideoService JSVideoService
+@inject IToastService ToastService
+@implements IDisposable
+<style>
+    .video-element::-webkit-media-controls {
+        display: none !important;
+    }
+
+    .video-element {
+        outline: none;
+        user-select: none;
+    }
+
+</style>
+<div class="video-player-container">
+    <div class="video-display">
+        <video autoplay="false" preload="metadata" id="videoPlayer" @ref="videoElement" class="video-element">
+            <source src="@VideoUrl" type="video/mp4" />
+            Your browser does not support the video tag.
+        </video>
+
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-container">
+        <div class="progress-bar" @onclick="HandleProgressClick" @onmousedown="StartSeeking" @onmouseup="StopSeeking">
+            <div class="progress-fill" style="width: @GetProgressPercentage()%"></div>
+            <div class="progress-handle" style="left: @GetProgressPercentage()%"></div>
+        </div>
+        <div class="time-display">
+            <span>@FormatTime(_playbackState.CurrentTime)</span>
+            <span>/</span>
+            <span>@FormatTime(_playbackState.Duration)</span>
+        </div>
+    </div>
+
+    <div class="video-controls">
+        <button class="control-btn" @onclick="HandleReplay">
+            <i class="fas fa-redo"></i>
+            Replay
+        </button>
+
+        <button class="control-btn" @onclick="HandleBackward">
+            <i class="fas fa-backward"></i>
+            Back -10s
+        </button>
+
+        <button class="control-btn" @onclick="HandlePlayPause">
+            @if (_playbackState.IsPlaying)
+            {
+                <i class="fas fa-pause"></i>
+                <span>Pause</span>
+            }
+            else
+            {
+                <i class="fas fa-play"></i>
+                <span>Play</span>
+            }
+        </button>
+
+        <button class="control-btn" @onclick="HandleForward">
+            <i class="fas fa-forward"></i>
+            Skip +10s
+        </button>
+
+        <button class="control-btn" @onclick="HandleSpeedChange">
+            Speed: @(_playbackState.PlaybackSpeed.ToString("0.##"))x
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string VideoUrl { get; set; } = string.Empty;
+    [Parameter] public string SenderName { get; set; } = string.Empty;
+    [Parameter] public EventCallback<PlaybackState> OnPlaybackStateChanged { get; set; }
+
+    private ElementReference videoElement;
+    private PlaybackState _playbackState = new();
+    private bool _isSeeking = false;
+    private System.Timers.Timer? _progressTimer;
+    protected override async Task OnInitializedAsync()
+    {
+        // Subscribe to playback state changes
+        VideoPlayerService.PlaybackStateChanged += OnPlaybackStateChangedInternal;
+
+        // Initialize progress timer to update current time
+        _progressTimer = new System.Timers.Timer(100); // Update every 100ms
+        _progressTimer.Elapsed += async (sender, e) => await UpdateProgress();
+        _progressTimer.Start();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !string.IsNullOrEmpty(VideoUrl))
+        {
+            await JSVideoService.InitializeVideoElementAsync("videoPlayer");
+            // Load the video source
+            await JSVideoService.PlayVideoAsync("videoPlayer", VideoUrl);
+            await JSVideoService.PauseVideoAsync("videoPlayer"); // Pause immediately to just load
+        }
+    }
+
+    private async Task UpdateProgress()
+    {
+        if (!_isSeeking)
+        {
+            try
+            {
+                var currentTime = await JSVideoService.GetVideoCurrentTimeAsync("videoPlayer");
+                var duration = await JSVideoService.GetVideoDurationAsync("videoPlayer");
+
+                _playbackState.CurrentTime = currentTime;
+                _playbackState.Duration = duration;
+
+                await InvokeAsync(StateHasChanged);
+            }
+            catch
+            {
+                // Handle any errors silently
+            }
+        }
+    }
+
+    private async void OnPlaybackStateChangedInternal(object? sender, PlaybackState state)
+    {
+        _playbackState.IsPlaying = state.IsPlaying;
+        _playbackState.PlaybackSpeed = state.PlaybackSpeed;
+        _playbackState.CurrentTime = state.CurrentTime;
+        _playbackState.Duration = state.Duration;
+
+        await InvokeAsync(StateHasChanged);
+        await OnPlaybackStateChanged.InvokeAsync(state);
+    }
+
+    private async Task HandlePlayPause()
+    {
+        if (_playbackState.IsPlaying)
+        {
+            await VideoPlayerService.PauseAsync();
+            await JSVideoService.PauseVideoAsync("videoPlayer");
+            _playbackState.IsPaused = true;
+        }
+        else if (_playbackState.IsPaused)
+        {
+            await JSVideoService.ResumeVideoAsync("videoPlayer");
+            _playbackState.IsPaused = false;
+            _playbackState.IsPlaying = true;
+
+        }
+        else
+        {
+            await VideoPlayerService.PlayAsync(VideoUrl);
+            await JSVideoService.PlayVideoAsync("videoPlayer", VideoUrl);
+            _playbackState.IsPlaying = true;
+        }
+        StateHasChanged();
+    }
+
+    private async Task HandleReplay()
+    {
+        await VideoPlayerService.ReplayAsync();
+        await JSVideoService.SetVideoCurrentTimeAsync("videoPlayer", 0);
+        _playbackState.CurrentTime = 0;
+        StateHasChanged();
+    }
+
+    private async Task HandleForward()
+    {
+        var newTime = Math.Min(_playbackState.CurrentTime + 10, _playbackState.Duration);
+        await VideoPlayerService.SkipForwardAsync();
+        await JSVideoService.SetVideoCurrentTimeAsync("videoPlayer", newTime);
+        _playbackState.CurrentTime = newTime;
+        StateHasChanged();
+    }
+
+    private async Task HandleBackward()
+    {
+        var newTime = Math.Max(_playbackState.CurrentTime - 10, 0);
+        await VideoPlayerService.SkipBackwardAsync();
+        await JSVideoService.SetVideoCurrentTimeAsync("videoPlayer", newTime);
+        _playbackState.CurrentTime = newTime;
+        StateHasChanged();
+    }
+
+    private async Task HandleSpeedChange()
+    {
+        var speeds = new[] { 0.5, 1.0, 1.25, 1.5, 2.0 };
+        var currentIndex = Array.IndexOf(speeds, _playbackState.PlaybackSpeed);
+        var nextIndex = (currentIndex + 1) % speeds.Length;
+        var newSpeed = speeds[nextIndex];
+
+        await VideoPlayerService.SetPlaybackSpeedAsync(newSpeed);
+        await JSVideoService.SetVideoPlaybackRateAsync("videoPlayer", newSpeed);
+        _playbackState.PlaybackSpeed = newSpeed;
+        StateHasChanged();
+    }
+
+    private async Task HandleProgressClick(MouseEventArgs e)
+    {
+        if (_playbackState.Duration > 0)
+        {
+            // Get the click position relative to the progress bar
+            var rect = await JSVideoService.GetVideoCurrentTimeAsync("videoPlayer"); // This is a placeholder
+            // You'll need to implement a JS function to get the click position
+            // For now, this is a simplified version
+            var percentage = 0.5; // This should be calculated based on click position
+            var newTime = _playbackState.Duration * percentage;
+
+            await JSVideoService.SetVideoCurrentTimeAsync("videoPlayer", newTime);
+            _playbackState.CurrentTime = newTime;
+            StateHasChanged();
+        }
+    }
+
+    private void StartSeeking()
+    {
+        _isSeeking = true;
+    }
+
+    private void StopSeeking()
+    {
+        _isSeeking = false;
+    }
+
+    private double GetProgressPercentage()
+    {
+        if (_playbackState.Duration <= 0) return 0;
+        return (_playbackState.CurrentTime / _playbackState.Duration) * 100;
+    }
+
+    private string FormatTime(double seconds)
+    {
+        var timeSpan = TimeSpan.FromSeconds(seconds);
+        if (timeSpan.TotalHours >= 1)
+        {
+            return timeSpan.ToString(@"h\:mm\:ss");
+        }
+        return timeSpan.ToString(@"m\:ss");
+    }
+
+    public void Dispose()
+    {
+        VideoPlayerService.PlaybackStateChanged -= OnPlaybackStateChangedInternal;
+        _progressTimer?.Stop();
+        _progressTimer?.Dispose();
+    }
+}

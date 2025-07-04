@@ -1,0 +1,473 @@
+﻿@using Blazored.Toast.Services
+@using Video.Messaging.App.Models
+@using Video.Messaging.App.Services
+@inject IVideoService VideoService
+@inject IJSVideoService JSVideoService
+@inject IToastService ToastService
+<div class="video-recorder-container">
+    <div class="recording-display">
+        @if (_isRecording || _isPaused || _hasRecording || _showCountdown)
+        {
+            <div class="recording-preview">
+              
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span class="user-name">@SenderName</span>
+                </div>
+        
+                
+                <div  class="video-container" style="position: relative;">
+
+                       @if (_isPaused && !string.IsNullOrEmpty(_pauseThumbnailUrl))
+                    {
+                            <img src="@_pauseThumbnailUrl" alt="Pause thumbnail" class="pause-thumbnail" />
+                    
+                    }
+                    
+                    <video id="livePreview" autoplay muted playsinline style="width: 100%;"></video>
+                    
+                    @* Recording Timer Display *@
+                    @if (_isRecording || _isPaused)
+                    {
+                        <div class="timer-overlay">
+                            <div class="timer-display">
+                                <i class="fas fa-clock"></i>
+                                <span class="timer-text">@FormatTime(_recordingTime)</span>
+                            </div>
+                        </div>
+                    }
+                    
+                 
+                    @if (_showCountdown)
+                    {
+                        <div class="countdown-overlay">
+                            <div class="countdown-number">@_countdownValue</div>
+                        </div>
+                    }
+                </div>
+                
+                @if (_isRecording)
+                {
+                    <div class="recording-indicator">
+                        <div class="red-dot"></div>
+                        <span>Recording...  @FormatTime(_recordingTime) </span>
+                    </div>
+                }
+                else if (_isPaused)
+                {
+                    <div class="recording-indicator" style="z-index:10">
+                        <div class="pause-indicator"></div>
+                        <span>Paused</span>
+                    </div>
+                }
+                else if (_hasRecording && _showPreview)
+                {
+                    <video id="recordedPreview" controls style="width: 100%; max-height: 450px;position: absolute;z-index: 100">
+                        <source src="@previewUrl" type="video/mp4" />
+                        Your browser does not support the video tag.
+                    </video>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="no-recording">
+                <i class="fas fa-video"></i>
+                <p>Ready to record</p>
+            </div>
+        }
+    </div>
+
+    <div class="recording-controls">
+        @if (!_isRecording && !_isPaused && !_hasRecording && !_showCountdown)
+        {
+            <button class="control-btn primary" @onclick="HandleStartRecording">
+                <i class="fas fa-circle"></i>
+                Record
+            </button>
+        }
+        else if (_isRecording)
+        {
+            <button class="control-btn warning" @onclick="HandlePauseRecording">
+                <i class="fas fa-pause"></i>
+                Pause
+            </button>
+            
+            <button class="control-btn danger" @onclick="HandleStopRecording">
+                <i class="fas fa-stop"></i>
+                Stop
+            </button>
+        }
+        else if (_isPaused)
+        {
+            <button class="control-btn success" @onclick="HandleResumeRecording">
+                <i class="fas fa-play"></i>
+                Resume
+            </button>
+            
+            <button class="control-btn danger" @onclick="HandleStopRecording">
+                <i class="fas fa-stop"></i>
+                Stop
+            </button>
+        }
+        else if (_hasRecording)
+        {
+            <button class="control-btn" @onclick="TogglePreview">
+                <i class="fas fa-eye"></i>
+                @(_showPreview ? "Hide Preview" : "Preview")
+            </button>
+            
+            <button class="control-btn" @onclick="HandleRetake">
+                <i class="fas fa-redo"></i>
+                Retake
+            </button>
+            
+            <button class="control-btn danger" @onclick="HandleDiscard">
+                <i class="fas fa-trash"></i>
+                Discard
+            </button>
+            
+            <button class="control-btn success" @onclick="HandleSend">
+                <i class="fas fa-paper-plane"></i>
+                Send
+            </button>
+        }
+        else if (_showCountdown)
+        {
+            <button class="control-btn danger" @onclick="HandleCancelCountdown">
+                <i class="fas fa-times"></i>
+                Cancel
+            </button>
+        }
+    </div>
+</div>
+
+<style>
+    .countdown-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 10;
+    }
+
+    .countdown-number {
+        font-size: 10rem;
+        font-weight: bold;
+        color: white;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        animation: countdown-pulse 1s ease-in-out;
+    }
+
+    @@keyframes countdown-pulse {
+        0% {
+            transform: scale(0.5);
+            opacity: 0;
+        }
+        50% {
+            transform: scale(1.2);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .timer-overlay {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 5;
+    }
+
+    .timer-display {
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 14px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .timer-text {
+        min-width: 60px;
+        text-align: center;
+    }
+
+    .thumbnail-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 8;
+        text-align: center;
+    }
+
+    .pause-thumbnail {
+       width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    object-fit: contain;
+    }
+
+    .thumbnail-label {
+        background-color: rgba(255, 255, 255, 0.9);
+        color: #333;
+        padding: 4px 8px;
+        border-radius: 4px;
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .video-container {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+    }
+</style>
+
+@code {
+    [Parameter] public string SenderName { get; set; } = string.Empty;
+    [Parameter] public EventCallback<VideoMessage> OnVideoRecorded { get; set; }
+    [Parameter] public EventCallback<VideoMessage> OnVideoSent { get; set; }
+
+    private bool _isRecording = false;
+    private bool _isPaused = false;
+    private bool _hasRecording = false;
+    private bool _showPreview = false;
+    private bool _showCountdown = false;
+    private int _countdownValue = 5;
+    private VideoMessage? _currentRecording;
+    private Timer? _countdownTimer;
+    private Timer? _recordingTimer;
+    private int _recordingTime = 0; // in seconds
+    private string _pauseThumbnailUrl = string.Empty;
+    private string previewUrl = string.Empty;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Initialize video elements only when they exist in DOM
+            if (_isRecording || _isPaused || _hasRecording || _showCountdown)
+            {
+                await JSVideoService.InitializeVideoElementAsync("livePreview");
+            }
+            if (_hasRecording && _showPreview)
+            {
+                await JSVideoService.InitializeVideoElementAsync("recordedPreview");
+            }
+        }
+    }
+
+    private async Task HandleStartRecording()
+    {
+        // Start countdown first
+        _showCountdown = true;
+        _countdownValue = 5;
+        StateHasChanged();
+
+        // Wait for DOM to update, then initialize video
+        await Task.Delay(100);
+        await JSVideoService.InitializeVideoElementAsync("livePreview");
+
+        // Start countdown timer
+        _countdownTimer = new Timer(CountdownTick, null, 1000, 1000);
+    }
+
+    private async void CountdownTick(object? state)
+    {
+        await InvokeAsync(async () =>
+        {
+            _countdownValue--;
+
+            if (_countdownValue <= 0)
+            {
+                // Stop countdown and start recording
+                _countdownTimer?.Dispose();
+                _showCountdown = false;
+
+                var success = await VideoService.StartRecordingAsync();
+                if (success)
+                {
+                    _isRecording = true;
+                    _isPaused = false;
+                    _hasRecording = false;
+                    _showPreview = false;
+                    _recordingTime = 0;
+                    _pauseThumbnailUrl = string.Empty;
+
+                    // Start recording timer
+                    _recordingTimer = new Timer(RecordingTimerTick, null, 1000, 1000);
+                }
+            }
+
+            StateHasChanged();
+        });
+    }
+
+    private async void RecordingTimerTick(object? state)
+    {
+        await InvokeAsync(() =>
+        {
+            if (_isRecording)
+            {
+                _recordingTime++;
+                StateHasChanged();
+            }
+        });
+    }
+
+    private async Task HandleCancelCountdown()
+    {
+        _countdownTimer?.Dispose();
+        _showCountdown = false;
+        _countdownValue = 5;
+        StateHasChanged();
+    }
+
+    private async Task HandlePauseRecording()
+    {
+        var success = await VideoService.PauseRecordingAsync();
+        if (success)
+        {
+            _isRecording = false;
+            _isPaused = true;
+
+            // Capture thumbnail from current video frame
+            _pauseThumbnailUrl = await JSVideoService.CaptureThumbnailAsync("livePreview");
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleResumeRecording()
+    {
+        var success = await VideoService.ResumeRecordingAsync();
+        if (success)
+        {
+            _isRecording = true;
+            _isPaused = false;
+            _pauseThumbnailUrl = string.Empty; // Clear thumbnail when resuming
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleStopRecording()
+    {
+        _recordingTimer?.Dispose();
+
+        var success = await VideoService.StopRecordingAsync();
+        if (success)
+        {
+            _isRecording = false;
+            _isPaused = false;
+            _hasRecording = true;
+            _pauseThumbnailUrl = string.Empty;
+            StateHasChanged();
+        }
+    }
+
+    private async Task TogglePreview ()
+    {
+        if (_showPreview)
+        {
+            // hide
+            _showPreview = false;
+            previewUrl = string.Empty;
+        }
+        else
+        {
+            // Show preview
+            _showPreview = true;
+            previewUrl = await VideoService.GetPreviewUrlAsync();
+        }
+    }
+
+    private async Task HandleRetake()
+    {
+        _recordingTimer?.Dispose();
+        _recordingTime = 0;
+        _pauseThumbnailUrl = string.Empty;
+        
+        _currentRecording = await VideoService.RetakeRecordingAsync();
+        _isRecording = true;
+        _isPaused = false;
+        _hasRecording = false;
+        _showPreview = false;
+        
+        // Start recording timer for retake
+        _recordingTimer = new Timer(RecordingTimerTick, null, 1000, 1000);
+        
+        StateHasChanged();
+        await OnVideoRecorded.InvokeAsync(_currentRecording);
+    }
+
+    private async Task HandleDiscard()
+    {
+        _recordingTimer?.Dispose();
+        _recordingTime = 0;
+        _pauseThumbnailUrl = string.Empty;
+        
+        var success = await VideoService.DiscardRecordingAsync();
+        if (success)
+        {
+            _isRecording = false;
+            _isPaused = false;
+            _hasRecording = false;
+            _showPreview = false;
+            _currentRecording = null;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleSend()
+    {
+        if (_hasRecording)
+        {
+            _recordingTimer?.Dispose();
+            
+            var videoMessage = await VideoService.SaveRecordingAsync(SenderName);
+            _isRecording = false;
+            _isPaused = false;
+            _hasRecording = false;
+            _showPreview = false;
+            _currentRecording = null;
+            _recordingTime = 0;
+            _pauseThumbnailUrl = string.Empty;
+            
+            StateHasChanged();
+            await OnVideoSent.InvokeAsync(videoMessage);
+        }
+    }
+
+    private string FormatTime(int seconds)
+    {
+        var minutes = seconds / 60;
+        var remainingSeconds = seconds % 60;
+        return $"{minutes:D2}:{remainingSeconds:D2}";
+    }
+
+    public void Dispose()
+    {
+        _countdownTimer?.Dispose();
+        _recordingTimer?.Dispose();
+    }
+}

@@ -1,0 +1,480 @@
+﻿* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Avenir LT Std', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #F5EFFF;
+    min-height: 100vh;
+}
+
+.video-messaging-container {
+    width: 100%;
+    height: 100vh;
+    background-color: #F5EFFF;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Header styles */
+.app-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 80px;
+    background-color: #EADCF9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+    .app-header h1 {
+        font-family: 'Avenir LT Std', sans-serif;
+        font-style: normal;
+        font-weight: 600;
+        font-size: 25px;
+        line-height: 30px;
+        text-align: center;
+        color: #9780B8;
+        margin: 0;
+    }
+
+/* Message type selector */
+.message-type-selector {
+    position: absolute;
+    top: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
+    z-index: 10;
+}
+
+.type-btn {
+    width: 180px;
+    height: 55px;
+    background: #EADCF9;
+    border-radius: 10px;
+    border: none;
+    font-family: 'Avenir LT Std', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 25px;
+    line-height: 30px;
+    text-align: center;
+    color: #444444;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+    .type-btn.active {
+        color: #9780B8;
+        background: #EADCF9;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .type-btn:hover {
+        background: #DCC9F3;
+        transform: translateY(-2px);
+    }
+
+/* Message content */
+.message-content {
+    position: absolute;
+    top: 200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 800px;
+    z-index: 5;
+}
+
+/* Video Player Styles */
+.video-player-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+.video-display {
+    position: relative;
+    width: 750px;
+    height: 500px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 20px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.video-element {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 20px;
+}
+
+.video-overlay {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 2;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: absolute;
+}
+
+.user-avatar {
+    width: 55px;
+    height: 55px;
+    background: #EADCF9;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9780B8;
+    font-size: 24px;
+}
+
+.user-name {
+    font-family: 'Avenir LT Std', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 25px;
+    line-height: 30px;
+    color: #999999;
+}
+
+/* Video Controls */
+.video-controls {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+}
+
+.control-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: #EADCF9;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Avenir LT Std', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 25px;
+    line-height: 30px;
+    text-align: center;
+    color: #9780B8;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+    justify-content: center;
+}
+
+    .control-btn:hover {
+        background: #DCC9F3;
+        transform: translateY(-2px);
+    }
+
+    .control-btn i {
+        font-size: 18px;
+    }
+
+    .control-btn.primary {
+        background: #9780B8;
+        color: white;
+    }
+
+        .control-btn.primary:hover {
+            background: #8A6FA7;
+        }
+
+    .control-btn.danger {
+        background: #E74C3C;
+        color: white;
+    }
+
+        .control-btn.danger:hover {
+            background: #C0392B;
+        }
+
+    .control-btn.success {
+        background: #27AE60;
+        color: white;
+    }
+
+        .control-btn.success:hover {
+            background: #229954;
+        }
+
+/* Video Recorder Styles */
+.video-recorder-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+.recording-display {
+    width: 786px;
+    height: 425px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.recording-preview {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.recording-indicator {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 8px 16px;
+    border-radius: 20px;
+    color: white;
+    font-size: 14px;
+}
+
+.red-dot {
+    width: 12px;
+    height: 12px;
+    background: #E74C3C;
+    border-radius: 50%;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+.no-recording {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    color: #999999;
+}
+
+    .no-recording i {
+        font-size: 64px;
+        color: #666666;
+    }
+
+    .no-recording p {
+        font-family: 'Avenir LT Std', sans-serif;
+        font-size: 18px;
+        color: #999999;
+    }
+
+/* Recording Controls */
+.recording-controls {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+}
+
+/* No message state */
+.no-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    flex-direction: column;
+    color: #999999;
+}
+
+    .no-message p {
+        font-family: 'Avenir LT Std', sans-serif;
+        font-size: 18px;
+        color: #999999;
+    }
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .video-display,
+    .recording-display {
+        width: 90vw;
+        height: 300px;
+    }
+
+    .message-type-selector {
+        top: 100px;
+        gap: 10px;
+    }
+
+    .type-btn {
+        width: 140px;
+        height: 45px;
+        font-size: 20px;
+    }
+
+    .control-btn {
+        font-size: 18px;
+        padding: 10px 15px;
+        min-width: 100px;
+    }
+
+    .video-controls,
+    .recording-controls {
+        gap: 15px;
+    }
+
+    .message-content {
+        top: 180px;
+        width: 95%;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-header h1 {
+        font-size: 20px;
+    }
+
+    .type-btn {
+        width: 120px;
+        height: 40px;
+        font-size: 18px;
+    }
+
+    .control-btn {
+        font-size: 16px;
+        padding: 8px 12px;
+        min-width: 80px;
+    }
+
+    .video-display,
+    .recording-display {
+        width: 95vw;
+        height: 250px;
+    }
+
+    .user-avatar {
+        width: 45px;
+        height: 45px;
+        font-size: 20px;
+    }
+
+    .user-name {
+        font-size: 20px;
+    }
+
+    .video-controls,
+    .recording-controls {
+        gap: 10px;
+        padding: 0 10px;
+    }
+}
+
+/* FontAwesome icons fallback */
+.fas {
+    display: inline-block;
+    font-style: normal;
+    font-variant: normal;
+    text-rendering: auto;
+    line-height: 1;
+}
+
+    /* Icon replacements for when FontAwesome is not available */
+    .fas.fa-user::before {
+        content: "👤";
+    }
+
+    .fas.fa-play::before {
+        content: "▶";
+    }
+
+    .fas.fa-pause::before {
+        content: "⏸";
+    }
+
+    .fas.fa-stop::before {
+        content: "⏹";
+    }
+
+    .fas.fa-redo::before {
+        content: "🔄";
+    }
+
+    .fas.fa-forward::before {
+        content: "⏭";
+    }
+
+    .fas.fa-backward::before {
+        content: "⏮";
+    }
+
+    .fas.fa-circle::before {
+        content: "⚫";
+    }
+
+    .fas.fa-eye::before {
+        content: "👁";
+    }
+
+    .fas.fa-trash::before {
+        content: "🗑";
+    }
+
+    .fas.fa-paper-plane::before {
+        content: "✈";
+    }
+
+    .fas.fa-video::before {
+        content: "📹";
+    }
+
+.no-message-image {
+    width: 50%;
+    object-fit: contain;
+}
