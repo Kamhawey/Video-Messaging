@@ -6,18 +6,13 @@
 @inject IToastService ToastService
 <div class="video-recorder-container">
     <div class="recording-display">
+
+         
+
         @if (_isRecording || _isPaused || _hasRecording || _showCountdown)
         {
             <div class="recording-preview">
               
-                <div class="user-info">
-                    <div class="user-avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <span class="user-name">@SenderName</span>
-                </div>
-        
-                
                 <div  class="video-container" style="position: relative;">
 
                        @if (_isPaused && !string.IsNullOrEmpty(_pauseThumbnailUrl))
@@ -28,16 +23,7 @@
                     
                     <video id="livePreview" autoplay muted playsinline style="width: 100%;"></video>
                     
-                    @* Recording Timer Display *@
-                    @if (_isRecording || _isPaused)
-                    {
-                        <div class="timer-overlay">
-                            <div class="timer-display">
-                                <i class="fas fa-clock"></i>
-                                <span class="timer-text">@FormatTime(_recordingTime)</span>
-                            </div>
-                        </div>
-                    }
+              
                     
                  
                     @if (_showCountdown)

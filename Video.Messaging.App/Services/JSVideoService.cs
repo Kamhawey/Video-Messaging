@@ -1,4 +1,5 @@
 ﻿using Microsoft.JSInterop;
+using Video.Messaging.App.Models;
 
 namespace Video.Messaging.App.Services;
 
@@ -8,7 +9,7 @@ public interface IJSVideoService
     Task<bool> StartMediaRecordingAsync();
     Task<bool> ResumeMediaRecordingAsync();
     Task<bool> ResumeVideoAsync(string elementId);
-
+    Task<BoundingRect> GetElementBoundingRectAsync(string elementId);
     Task<bool> StopMediaRecordingAsync();
     Task<string> GetRecordedVideoUrlAsync();
     Task<bool> PlayVideoAsync(string elementId, string videoUrl);
@@ -39,6 +40,20 @@ public class JSVideoService : IJSVideoService, IAsyncDisposable
         _jsModule ??= await _jsRuntime.InvokeAsync<IJSObjectReference>("import", "./js/videoService.js");
         return _jsModule;
     }
+    public async Task<BoundingRect> GetElementBoundingRectAsync(string elementId)
+    {
+        try
+        {
+            var module = await GetJSModule();
+            var result = await module.InvokeAsync<BoundingRect>("getElementBoundingRect", elementId);
+            return result ?? new BoundingRect();
+        }
+        catch (Exception ex)
+        {
+            return new BoundingRect();
+        }
+    }
+
     public async Task<bool> ResumeVideoAsync(string elementId)
     {
         try

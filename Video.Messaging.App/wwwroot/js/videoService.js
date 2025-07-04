@@ -460,6 +460,26 @@ export function cleanup() {
         return false;
     }
 }
+export function getElementBoundingRect(elementId) {
+    try {
+        const element = document.getElementById(elementId);
+        if (!element) {
+            console.error(`Element with id ${elementId} not found`);
+            return { left: 0, top: 0, width: 0, height: 0 };
+        }
+
+        const rect = element.getBoundingClientRect();
+        return {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height
+        };
+    } catch (error) {
+        console.error('Error getting element bounding rect:', error);
+        return { left: 0, top: 0, width: 0, height: 0 };
+    }
+}
 
 // Listen for beforeunload to cleanup resources
 window.addEventListener('beforeunload', cleanup);
