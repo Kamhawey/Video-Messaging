@@ -12,12 +12,16 @@ body {
 
 .video-messaging-container {
     width: 100%;
-    height: 100vh;
+    min-height: 100vh;
     background-color: #F5EFFF;
     position: relative;
-    overflow: hidden;
+    overflow-x: hidden;
+    padding-bottom: 20px;
 }
 
+i {
+    font-family: var(--fa-style-family,"Font Awesome 6 Free");
+}
 /* Header styles */
 .app-header {
     position: absolute;
@@ -30,14 +34,15 @@ body {
     align-items: center;
     justify-content: center;
     z-index: 10;
+    padding: 0 20px;
 }
 
     .app-header h1 {
         font-family: 'Avenir LT Std', sans-serif;
         font-style: normal;
         font-weight: 600;
-        font-size: 25px;
-        line-height: 30px;
+        font-size: clamp(18px, 4vw, 25px);
+        line-height: 1.2;
         text-align: center;
         color: #9780B8;
         margin: 0;
@@ -46,25 +51,30 @@ body {
 /* Message type selector */
 .message-type-selector {
     position: absolute;
-    top: 120px;
+    top: 100px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 20px;
+    gap: clamp(10px, 3vw, 20px);
     z-index: 10;
+    padding: 0 20px;
+    width: 100%;
+    max-width: 400px;
 }
 
 .type-btn {
-    width: 180px;
-    height: 55px;
+    flex: 1;
+    min-width: 120px;
+    max-width: 180px;
+    height: clamp(45px, 8vw, 55px);
     background: #EADCF9;
     border-radius: 10px;
     border: none;
     font-family: 'Avenir LT Std', sans-serif;
     font-style: normal;
     font-weight: 600;
-    font-size: 25px;
-    line-height: 30px;
+    font-size: clamp(16px, 4vw, 25px);
+    line-height: 1.2;
     text-align: center;
     color: #444444;
     cursor: pointer;
@@ -85,12 +95,13 @@ body {
 /* Message content */
 .message-content {
     position: absolute;
-    top: 200px;
+    top: clamp(160px, 20vh, 200px);
     left: 50%;
     transform: translateX(-50%);
-    width: 90%;
+    width: 95%;
     max-width: 800px;
     z-index: 5;
+    padding: 0 10px;
 }
 
 /* Video Player Styles */
@@ -99,13 +110,14 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 30px;
+    gap: clamp(20px, 4vw, 30px);
 }
 
 .video-display {
     position: relative;
-    width: 750px;
-    height: 500px;
+    width: 100%;
+    max-width: 750px;
+    height: clamp(250px, 50vw, 500px);
     background: rgba(0, 0, 0, 0.8);
     border-radius: 20px;
     overflow: hidden;
@@ -134,59 +146,114 @@ body {
 .user-info {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: clamp(8px, 2vw, 10px);
     position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 3;
 }
 
 .user-avatar {
-    width: 55px;
-    height: 55px;
+    width: clamp(40px, 8vw, 55px);
+    height: clamp(40px, 8vw, 55px);
     background: #EADCF9;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #9780B8;
-    font-size: 24px;
+    font-size: clamp(16px, 4vw, 24px);
 }
 
 .user-name {
     font-family: 'Avenir LT Std', sans-serif;
     font-style: normal;
     font-weight: 600;
-    font-size: 25px;
-    line-height: 30px;
+    font-size: clamp(16px, 4vw, 25px);
+    line-height: 1.2;
     color: #999999;
+}
+
+/* Progress Bar Styles */
+.progress-container {
+    width: 100%;
+    max-width: 750px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 20px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #DDD;
+    border-radius: 4px;
+    position: relative;
+    cursor: pointer;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #9780B8;
+    border-radius: 4px;
+    transition: width 0.1s ease;
+}
+
+.progress-handle {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    background: #9780B8;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.time-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Avenir LT Std', sans-serif;
+    font-size: clamp(12px, 2.5vw, 14px);
+    color: #666;
+    padding: 0 10px;
 }
 
 /* Video Controls */
 .video-controls {
     display: flex;
-    gap: 20px;
+    gap: clamp(10px, 2vw, 20px);
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
+    padding: 0 20px;
+    width: 100%;
+    max-width: 800px;
 }
 
 .control-btn {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 20px;
+    gap: clamp(4px, 1vw, 8px);
+    padding: clamp(8px, 2vw, 12px) clamp(12px, 3vw, 20px);
     background: #EADCF9;
     border: none;
     border-radius: 10px;
     font-family: 'Avenir LT Std', sans-serif;
     font-style: normal;
     font-weight: 600;
-    font-size: 25px;
-    line-height: 30px;
+    font-size: clamp(14px, 3vw, 20px);
+    line-height: 1.2;
     text-align: center;
     color: #9780B8;
     cursor: pointer;
     transition: all 0.3s ease;
-    min-width: 120px;
+    min-width: clamp(80px, 15vw, 120px);
     justify-content: center;
+    flex: 1;
+    max-width: 150px;
 }
 
     .control-btn:hover {
@@ -195,7 +262,7 @@ body {
     }
 
     .control-btn i {
-        font-size: 18px;
+        font-size: clamp(14px, 3vw, 18px);
     }
 
     .control-btn.primary {
@@ -225,18 +292,28 @@ body {
             background: #229954;
         }
 
+    .control-btn.warning {
+        background: #F39C12;
+        color: white;
+    }
+
+        .control-btn.warning:hover {
+            background: #E67E22;
+        }
+
 /* Video Recorder Styles */
 .video-recorder-container {
     width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 30px;
+    gap: clamp(20px, 4vw, 30px);
 }
 
 .recording-display {
-    width: 786px;
-    height: 425px;
+    width: 100%;
+    max-width: 786px;
+    height: clamp(250px, 50vw, 425px);
     background: rgba(0, 0, 0, 0.8);
     border-radius: 20px;
     display: flex;
@@ -259,24 +336,32 @@ body {
 
 .recording-indicator {
     position: absolute;
-    top: 20px;
-    right: 20px;
+    top: 15px;
+    right: 15px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: clamp(6px, 1.5vw, 10px);
     background: rgba(0, 0, 0, 0.7);
-    padding: 8px 16px;
+    padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2.5vw, 16px);
     border-radius: 20px;
     color: white;
-    font-size: 14px;
+    font-size: clamp(12px, 2.5vw, 14px);
+    z-index: 10;
 }
 
 .red-dot {
-    width: 12px;
-    height: 12px;
+    width: clamp(8px, 2vw, 12px);
+    height: clamp(8px, 2vw, 12px);
     background: #E74C3C;
     border-radius: 50%;
     animation: pulse 1s infinite;
+}
+
+.pause-indicator {
+    width: clamp(8px, 2vw, 12px);
+    height: clamp(8px, 2vw, 12px);
+    background: #F39C12;
+    border-radius: 2px;
 }
 
 @keyframes pulse {
@@ -300,26 +385,109 @@ body {
     justify-content: center;
     gap: 20px;
     color: #999999;
+    padding: 20px;
 }
 
     .no-recording i {
-        font-size: 64px;
+        font-size: clamp(40px, 8vw, 64px);
         color: #666666;
     }
 
     .no-recording p {
         font-family: 'Avenir LT Std', sans-serif;
-        font-size: 18px;
+        font-size: clamp(14px, 3vw, 18px);
         color: #999999;
+        text-align: center;
     }
 
 /* Recording Controls */
 .recording-controls {
     display: flex;
-    gap: 20px;
+    gap: clamp(10px, 2vw, 20px);
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
+    padding: 0 20px;
+    width: 100%;
+    max-width: 800px;
+}
+
+/* Countdown and Timer Overlays */
+.countdown-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 10;
+}
+
+.countdown-number {
+    font-size: clamp(4rem, 15vw, 10rem);
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    animation: countdown-pulse 1s ease-in-out;
+}
+
+@keyframes countdown-pulse {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.timer-overlay {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 5;
+}
+
+.timer-display {
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: clamp(6px, 1.5vw, 8px) clamp(8px, 2vw, 12px);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    font-size: clamp(12px, 2.5vw, 14px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.timer-text {
+    min-width: clamp(50px, 10vw, 60px);
+    text-align: center;
+}
+
+.video-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.pause-thumbnail {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    object-fit: contain;
 }
 
 /* No message state */
@@ -327,93 +495,26 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 400px;
+    height: clamp(250px, 50vw, 400px);
     background: rgba(0, 0, 0, 0.1);
     border-radius: 20px;
     flex-direction: column;
     color: #999999;
+    padding: 20px;
 }
 
     .no-message p {
         font-family: 'Avenir LT Std', sans-serif;
-        font-size: 18px;
+        font-size: clamp(14px, 3vw, 18px);
         color: #999999;
+        text-align: center;
     }
 
-/* Responsive design */
-@media (max-width: 768px) {
-    .video-display,
-    .recording-display {
-        width: 90vw;
-        height: 300px;
-    }
-
-    .message-type-selector {
-        top: 100px;
-        gap: 10px;
-    }
-
-    .type-btn {
-        width: 140px;
-        height: 45px;
-        font-size: 20px;
-    }
-
-    .control-btn {
-        font-size: 18px;
-        padding: 10px 15px;
-        min-width: 100px;
-    }
-
-    .video-controls,
-    .recording-controls {
-        gap: 15px;
-    }
-
-    .message-content {
-        top: 180px;
-        width: 95%;
-    }
-}
-
-@media (max-width: 480px) {
-    .app-header h1 {
-        font-size: 20px;
-    }
-
-    .type-btn {
-        width: 120px;
-        height: 40px;
-        font-size: 18px;
-    }
-
-    .control-btn {
-        font-size: 16px;
-        padding: 8px 12px;
-        min-width: 80px;
-    }
-
-    .video-display,
-    .recording-display {
-        width: 95vw;
-        height: 250px;
-    }
-
-    .user-avatar {
-        width: 45px;
-        height: 45px;
-        font-size: 20px;
-    }
-
-    .user-name {
-        font-size: 20px;
-    }
-
-    .video-controls,
-    .recording-controls {
-        gap: 10px;
-        padding: 0 10px;
-    }
+.no-message-image {
+    width: clamp(150px, 40vw, 300px);
+    max-width: 50%;
+    object-fit: contain;
+    margin-bottom: 20px;
 }
 
 /* FontAwesome icons fallback */
@@ -474,7 +575,254 @@ body {
         content: "📹";
     }
 
-.no-message-image {
-    width: 50%;
-    object-fit: contain;
+    .fas.fa-clock::before {
+        content: "⏰";
+    }
+
+    .fas.fa-times::before {
+        content: "✖";
+    }
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+    .video-messaging-container {
+        overflow-x: hidden;
+    }
+
+    .message-type-selector {
+        top: 90px;
+        width: calc(100% - 20px);
+        max-width: none;
+        padding: 0 10px;
+    }
+
+    .type-btn {
+        min-width: 100px;
+        height: 45px;
+    }
+
+    .message-content {
+        top: 150px;
+        width: calc(100% - 20px);
+        padding: 0 10px;
+    }
+
+    .video-controls,
+    .recording-controls {
+        gap: 10px;
+        padding: 0 10px;
+    }
+
+    .control-btn {
+        min-width: 70px;
+        max-width: 120px;
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+
+    .user-info {
+        top: 15px;
+        left: 15px;
+    }
+
+    .recording-indicator {
+        top: 10px;
+        right: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-header {
+        height: 70px;
+        padding: 0 15px;
+    }
+
+        .app-header h1 {
+            font-size: 18px;
+        }
+
+    .message-type-selector {
+        top: 80px;
+        gap: 8px;
+        width: calc(100% - 20px);
+    }
+
+    .type-btn {
+        min-width: 90px;
+        height: 40px;
+        font-size: 16px;
+    }
+
+    .message-content {
+        top: 130px;
+        width: calc(100% - 20px);
+    }
+
+    .video-controls,
+    .recording-controls {
+        gap: 8px;
+        padding: 0 5px;
+    }
+
+    .control-btn {
+        min-width: 60px;
+        max-width: 100px;
+        font-size: 12px;
+        padding: 6px 10px;
+        gap: 4px;
+    }
+
+        .control-btn i {
+            font-size: 12px;
+        }
+
+    .user-info {
+        top: 10px;
+        left: 10px;
+        gap: 6px;
+    }
+
+    .user-avatar {
+        width: 35px;
+        height: 35px;
+        font-size: 14px;
+    }
+
+    .user-name {
+        font-size: 16px;
+    }
+
+    .recording-indicator {
+        top: 8px;
+        right: 8px;
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
+    .timer-overlay {
+        top: 8px;
+        right: 8px;
+    }
+
+    .timer-display {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
+    .countdown-number {
+        font-size: 3rem;
+    }
+
+    .progress-container {
+        padding: 0 10px;
+    }
+
+    .time-display {
+        font-size: 11px;
+        padding: 0 5px;
+    }
+}
+
+@media (max-width: 360px) {
+    .app-header h1 {
+        font-size: 16px;
+    }
+
+    .type-btn {
+        min-width: 80px;
+        height: 36px;
+        font-size: 14px;
+    }
+
+    .control-btn {
+        min-width: 55px;
+        max-width: 85px;
+        font-size: 11px;
+        padding: 5px 8px;
+    }
+
+    .video-controls,
+    .recording-controls {
+        gap: 6px;
+    }
+
+    .user-name {
+        font-size: 14px;
+    }
+
+    .countdown-number {
+        font-size: 2.5rem;
+    }
+}
+
+/* Landscape orientation on mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .app-header {
+        height: 60px;
+    }
+
+        .app-header h1 {
+            font-size: 16px;
+        }
+
+    .message-type-selector {
+        top: 70px;
+    }
+
+    .type-btn {
+        height: 35px;
+        font-size: 14px;
+    }
+
+    .message-content {
+        top: 115px;
+    }
+
+    .video-display,
+    .recording-display {
+        height: 200px;
+    }
+
+    .control-btn {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+
+    .countdown-number {
+        font-size: 2rem;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .control-btn:hover,
+    .type-btn:hover {
+        transform: none;
+    }
+
+    .control-btn:active,
+    .type-btn:active {
+        transform: scale(0.95);
+    }
+
+    .progress-bar {
+        height: 12px;
+    }
+
+    .progress-handle {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* Print styles */
+@media print {
+    .video-messaging-container {
+        background: white;
+    }
+
+    .control-btn,
+    .type-btn {
+        display: none;
+    }
 }

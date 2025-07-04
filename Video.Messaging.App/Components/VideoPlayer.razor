@@ -25,7 +25,7 @@
 
     <!-- Progress Bar -->
     <div class="progress-container">
-        <div class="progress-bar" @onclick="HandleProgressClick" @onmousedown="StartSeeking" @onmouseup="StopSeeking">
+        <div id="progress-bar" class="progress-bar" @onclick="HandleProgressClick" @onmousedown="StartSeeking" @onmouseup="StopSeeking">
             <div class="progress-fill" style="width: @GetProgressPercentage()%"></div>
             <div class="progress-handle" style="left: @GetProgressPercentage()%"></div>
         </div>
@@ -44,7 +44,7 @@
 
         <button class="control-btn" @onclick="HandleBackward">
             <i class="fas fa-backward"></i>
-            Back -10s
+            -10s
         </button>
 
         <button class="control-btn" @onclick="HandlePlayPause">
@@ -62,11 +62,11 @@
 
         <button class="control-btn" @onclick="HandleForward">
             <i class="fas fa-forward"></i>
-            Skip +10s
+            +10s
         </button>
 
         <button class="control-btn" @onclick="HandleSpeedChange">
-            Speed: @(_playbackState.PlaybackSpeed.ToString("0.##"))x
+            @(_playbackState.PlaybackSpeed.ToString("0.##"))x
         </button>
     </div>
 </div>
@@ -196,21 +196,30 @@
         _playbackState.PlaybackSpeed = newSpeed;
         StateHasChanged();
     }
-
     private async Task HandleProgressClick(MouseEventArgs e)
     {
         if (_playbackState.Duration > 0)
         {
-            // Get the click position relative to the progress bar
-            var rect = await JSVideoService.GetVideoCurrentTimeAsync("videoPlayer"); // This is a placeholder
-            // You'll need to implement a JS function to get the click position
-            // For now, this is a simplified version
-            var percentage = 0.5; // This should be calculated based on click position
-            var newTime = _playbackState.Duration * percentage;
+            try
+            {
+                var progressBarRect = await JSVideoService.GetElementBoundingRectAsync("progress-bar");
 
-            await JSVideoService.SetVideoCurrentTimeAsync("videoPlayer", newTime);
-            _playbackState.CurrentTime = newTime;
-            StateHasChanged();
+                var clickX = e.ClientX - progressBarRect.Left;
+                var percentage = Math.Max(0, Math.Min(1, clickX / progressBarRect.Width));
+
+                var newTime = _playbackState.Duration * percentage;
+
+                await JSVideoService.SetVideoCurrentTimeAsync("videoPlayer", newTime);
+                _playbackState.CurrentTime = newTime;
+
+                await VideoPlayerService.SeekAsync(newTime);
+
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                ToastService.ShowError($"Failed to seek video: {ex.Message}");
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using Video.Messaging.App.Models
+@using Video.Messaging.App.Models.Enums
 @using Video.Messaging.App.Services
 @using Video.Messaging.App.Components
 @inject IVideoService VideoService
@@ -15,10 +16,18 @@
     <div class="message-type-selector">
         <button class="type-btn @(_currentMessageType == MessageType.Incoming ? "active" : "")"
                 @onclick="() => SetMessageType(MessageType.Incoming)">
+            @if (_currentMessageType == MessageType.Incoming)
+            {
+                <i class="fa-regular fa-comment"></i>
+            }
             Incoming
         </button>
         <button class="type-btn @(_currentMessageType == MessageType.Outgoing ? "active" : "")"
                 @onclick="() => SetMessageType(MessageType.Outgoing)">
+            @if (_currentMessageType == MessageType.Outgoing)
+            {
+                <i class="fa-regular fa-comment"></i>
+            }
             Outgoing
         </button>
     </div>
