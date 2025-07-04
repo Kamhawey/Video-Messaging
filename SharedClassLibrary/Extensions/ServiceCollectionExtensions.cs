@@ -1,4 +1,5 @@
 ﻿using KristofferStrube.Blazor.MediaCaptureStreams;
+using Microsoft.Extensions.DependencyInjection;
 using Video.Messaging.App.Services;
 
 namespace Video.Messaging.App.Extensions;
