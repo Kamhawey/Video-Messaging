@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Razor">
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
@@ -10,6 +10,8 @@
 	<ItemGroup>
 		<PackageReference Include="Blazored.Toast" Version="4.2.1" />
 		<PackageReference Include="KristofferStrube.Blazor.MediaCaptureStreams" Version="0.4.0" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
+		<PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.7" />
 
 		<SupportedPlatform Include="browser" />
 	</ItemGroup>

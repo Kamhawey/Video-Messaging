@@ -1,0 +1,179 @@
+@page "/login"
+@using Blazored.Toast.Services
+@using SharedClassLibrary.Models.Auth
+@using SharedClassLibrary.Models.Common
+@using SharedClassLibrary.Services.Auth
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<div class="login-container">
+    <div class="login-card">
+        <h2>Login</h2>
+
+        <EditForm Model="@loginModel" OnValidSubmit="@HandleLogin">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <InputText id="email" @bind-Value="loginModel.Email" class="form-control" />
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <InputText id="password" type="password" @bind-Value="loginModel.Password" class="form-control" />
+            </div>
+
+            <button type="submit" class="btn btn-primary" disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span>Logging in...</span>
+                }
+                else
+                {
+                    <h4>Login</h4>
+                }
+            </button>
+        </EditForm>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+    </div>
+</div>
+
+<style>
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background-color: #f5f5f5;
+    }
+
+    .login-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 400px;
+    }
+
+        .login-card h2 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+        }
+
+    .form-control {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+
+    .btn {
+        width: 100%;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .btn-primary {
+        color: white;
+        background-color: #c0a2e0;
+    }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #EADCF9;
+        }
+
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .alert {
+        margin-top: 1rem;
+        padding: 0.75rem;
+        border-radius: 4px;
+    }
+
+    .alert-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+</style>
+
+@code {
+    private LoginRequestDto loginModel = new();
+    private bool isLoading = false;
+    private string errorMessage = string.Empty;
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            var result = await AuthService.LoginAsync(loginModel.Email, loginModel.Password);
+
+            if (result == null)
+            {
+                errorMessage = "Login failed: Unable to connect to the server.";
+                return;
+            }
+
+            if (result.IsSuccess)
+            {
+                NavigationManager.NavigateTo("/", true);
+            }
+            else
+            {
+                errorMessage = result.Error.Code switch
+                {
+                    ErrorCode.InvalidCredentials => "Invalid email or password.",
+                    ErrorCode.UserNotFound => "User not found.",
+                    ErrorCode.EmailNotConfirmed => "Please confirm your email address.",
+                    ErrorCode.InvalidToken => "Invalid authentication token.",
+                    _ => result.Error.Message // Fallback to the error message from the API
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Login failed: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (await AuthService.IsAuthenticatedAsync())
+        {
+            NavigationManager.NavigateTo("/", true);
+        }
+    }
+}

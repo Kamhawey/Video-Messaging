@@ -1,9 +1,10 @@
 ﻿using Blazored.Toast;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using SharedClassLibrary.Services.Auth;
 using System.Windows;
 using Video.Messaging.App.Extensions;
-
 namespace DesktopVersion;
 
 /// <summary>
@@ -19,7 +20,25 @@ public partial class App : Application
 
         builder.ConfigureServices((context, services) =>
         {
-            // Add Blazor WebView services
+            services.AddSingleton<IConfiguration>(provider =>
+            {
+                return new ConfigurationBuilder()
+                    .AddJsonFile("appsettings.json", optional: true)
+                    .AddInMemoryCollection(new Dictionary<string, string>
+                    {
+                        ["ApiUrl"] = "https://localhost:8887"
+                    }).Build();
+            });
+
+            // Add HttpClient
+            services.AddHttpClient<AuthService>();
+
+            // Add services
+            services.AddSingleton<ITokenStorageService, TokenStorageService>();
+            services.AddTransient<IAuthService, AuthService>();
+
+
+
             services.AddWpfBlazorWebView();
 
             // Add your shared services from the class library
