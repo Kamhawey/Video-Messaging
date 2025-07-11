@@ -1,4 +1,5 @@
 ﻿using Microsoft.JSInterop;
+using SharedClassLibrary.Models;
 using Video.Messaging.App.Models;
 
 namespace Video.Messaging.App.Services;
@@ -23,6 +24,8 @@ public interface IJSVideoService
     Task<bool> CheckMediaRecordingSupport();
     Task<string> CaptureThumbnailAsync(string elementId);
 
+    Task<VideoFileData?> GetVideoBlobAsync();
+    Task<bool> DownloadVideoFileAsync();
 }
 
 public class JSVideoService : IJSVideoService, IAsyncDisposable
@@ -33,6 +36,31 @@ public class JSVideoService : IJSVideoService, IAsyncDisposable
     public JSVideoService(IJSRuntime jsRuntime)
     {
         _jsRuntime = jsRuntime;
+    }
+    public async Task<VideoFileData?> GetVideoBlobAsync()
+    {
+        try
+        {
+            var module = await GetJSModule();
+            return await module.InvokeAsync<VideoFileData?>("getVideoBlob");
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<bool> DownloadVideoFileAsync()
+    {
+        try
+        {
+            var module = await GetJSModule();
+            return await module.InvokeAsync<bool>("downloadVideoFile");
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private async Task<IJSObjectReference> GetJSModule()

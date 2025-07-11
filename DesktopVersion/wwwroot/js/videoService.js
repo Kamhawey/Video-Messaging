@@ -481,5 +481,71 @@ export function getElementBoundingRect(elementId) {
     }
 }
 
+
+// Get video blob data for IFormFile conversion
+export async function getVideoBlob() {
+    try {
+        if (!recordedVideoUrl) {
+            console.error('No recorded video URL available');
+            return null;
+        }
+
+        // Fetch the blob from the object URL
+        const response = await fetch(recordedVideoUrl);
+        const blob = await response.blob();
+
+        // Get the MIME type from the MediaRecorder
+        const mimeType = mediaRecorder ? mediaRecorder.mimeType : 'video/webm';
+
+        // Convert blob to array buffer
+        const arrayBuffer = await blob.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+
+        // Generate filename based on MIME type
+        const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
+        const filename = `recorded_video_${Date.now()}.${extension}`;
+
+        return {
+            data: Array.from(uint8Array), // Convert to regular array for serialization
+            mimeType: mimeType,
+            filename: filename,
+            size: blob.size
+        };
+    } catch (error) {
+        console.error('Error getting video blob:', error);
+        return null;
+    }
+}
+
+// Download video file (for testing purposes)
+export function downloadVideoFile() {
+    try {
+        if (!recordedVideoUrl) {
+            console.error('No recorded video URL available');
+            return false;
+        }
+
+        const mimeType = mediaRecorder ? mediaRecorder.mimeType : 'video/webm';
+        const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
+        const filename = `recorded_video_${Date.now()}.${extension}`;
+
+        // Create download link
+        const downloadLink = document.createElement('a');
+        downloadLink.href = recordedVideoUrl;
+        downloadLink.download = filename;
+        downloadLink.style.display = 'none';
+
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+
+        console.log(`Downloaded: ${filename}`);
+        return true;
+    } catch (error) {
+        console.error('Error downloading video file:', error);
+        return false;
+    }
+}
+
 // Listen for beforeunload to cleanup resources
 window.addEventListener('beforeunload', cleanup);

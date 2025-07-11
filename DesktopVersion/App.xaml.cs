@@ -2,7 +2,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using SharedClassLibrary.Config;
+using SharedClassLibrary.Services;
 using SharedClassLibrary.Services.Auth;
+using SharedClassLibrary.Services.WS;
 using System.Windows;
 using Video.Messaging.App.Extensions;
 namespace DesktopVersion;
@@ -32,10 +35,23 @@ public partial class App : Application
 
             // Add HttpClient
             services.AddHttpClient<AuthService>();
+            services.AddHttpClient<VideoApiService>();
 
+            #region Configuration
+            IConfiguration configuration = context.Configuration;
+
+            services.Configure<WebSocketSettings>(
+              configuration.GetSection("WebSocketSettings"));
+
+            services.Configure<VideoApiSettings>(
+                configuration.GetSection("VideoApiSettings"));
+
+            #endregion
             // Add services
             services.AddSingleton<ITokenStorageService, TokenStorageService>();
             services.AddTransient<IAuthService, AuthService>();
+            services.AddTransient<IVideoApiService, VideoApiService>();
+            services.AddScoped<IWebSocketService, WebSocketService>();
 
 
 
