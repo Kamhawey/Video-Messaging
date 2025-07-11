@@ -1,4 +1,7 @@
-﻿using Video.Messaging.App.Models;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Internal;
+using SharedClassLibrary.Services;
+using Video.Messaging.App.Models;
 
 namespace Video.Messaging.App.Services;
 
@@ -8,22 +11,47 @@ public interface IVideoService
     Task<bool> StopRecordingAsync();
     Task<bool> PauseRecordingAsync();
     Task<bool> ResumeRecordingAsync();
-    Task<VideoMessage> SaveRecordingAsync(string senderName);
+    Task<string> SaveRecordingAsync(string senderName, string clientId);
     Task<bool> DiscardRecordingAsync();
     Task<VideoMessage> RetakeRecordingAsync();
     Task<string> GetPreviewUrlAsync();
     Task<List<VideoMessage>> GetVideoMessagesAsync();
     Task<bool> DeleteVideoMessageAsync(Guid messageId);
+    Task<IFormFile?> GetVideoAsFormFileAsync();
+    Task<bool> DownloadVideoForTestingAsync();
 }
 
 public class VideoService : IVideoService
 {
+    private readonly IVideoApiService _videoApiService;
     private readonly IJSVideoService _jsVideoService;
     private static readonly List<VideoMessage> _videoMessages = new(); // In-memory storage
+    public async Task<IFormFile?> GetVideoAsFormFileAsync()
+    {
+        var videoData = await _jsVideoService.GetVideoBlobAsync();
+        if (videoData == null || videoData.Data.Length == 0)
+            return null;
 
-    public VideoService(IJSVideoService jsVideoService)
+        // Convert int array back to byte array
+        var byteArray = videoData.Data.Select(x => (byte)x).ToArray();
+        var stream = new MemoryStream(byteArray);
+
+        return new FormFile(stream, 0, stream.Length, "video", videoData.Filename)
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = videoData.MimeType
+        };
+    }
+
+    public async Task<bool> DownloadVideoForTestingAsync()
+    {
+        return await _jsVideoService.DownloadVideoFileAsync();
+    }
+
+    public VideoService(IJSVideoService jsVideoService, IVideoApiService videoApiService)
     {
         _jsVideoService = jsVideoService;
+        _videoApiService = videoApiService;
     }
 
     public async Task<bool> StartRecordingAsync()
@@ -46,23 +74,23 @@ public class VideoService : IVideoService
         return await _jsVideoService.ResumeMediaRecordingAsync();
     }
 
-    public async Task<VideoMessage> SaveRecordingAsync(string senderName)
+    public async Task<string> SaveRecordingAsync(string senderName, string clientId)
     {
-        var videoUrl = await _jsVideoService.GetRecordedVideoUrlAsync();
-        if (!string.IsNullOrEmpty(videoUrl))
+        var videoFile = await GetVideoAsFormFileAsync();
+        if (videoFile == null)
+            throw new Exception("No video file available");
+
+        try
         {
-            var videoMessage = new VideoMessage
-            {
-                Id = Guid.NewGuid(),
-                SenderName = senderName,
-                VideoUrl = videoUrl,
-                IsIncoming = true, // Mark as incoming for employees
-                CreatedAt = DateTime.UtcNow
-            };
-            _videoMessages.Add(videoMessage);
-            return videoMessage;
+            var uploadResult = await _videoApiService.UploadVideoAsync(videoFile, clientId);
+
+
+            return uploadResult;
         }
-        throw new InvalidOperationException("No video recorded to save.");
+        catch (Exception ex)
+        {
+            throw new Exception($"Failed to upload video: {ex.Message}");
+        }
     }
 
     public async Task<bool> DiscardRecordingAsync()

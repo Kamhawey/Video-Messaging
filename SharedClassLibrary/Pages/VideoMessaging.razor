@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using SharedClassLibrary.Models.Auth
 @using SharedClassLibrary.Services.Auth
+@using SharedClassLibrary.Services.WS
 @using Video.Messaging.App.Models
 @using Video.Messaging.App.Models.Enums
 @using Video.Messaging.App.Services
@@ -8,6 +9,7 @@
 @inject IVideoService VideoService
 @inject IVideoPlayerService VideoPlayerService
 @inject IAuthService AuthService
+@inject IWebSocketService WebSocketService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Video Messaging</PageTitle>
@@ -27,6 +29,11 @@ else
         <header class="app-header">
             <h1 CL>Chat</h1>
             <div class="header-controls">
+                <div class="connection-status @GetConnectionStatusClass()">
+                    <i class="@GetConnectionStatusIcon()"></i>
+                    <span>@GetConnectionStatusText()</span>
+                </div>
+
                 <button class="display-mode-btn @(_displayMode == DisplayMode.Separate ? "active" : "")"
                         @onclick="() => SetDisplayMode(DisplayMode.Separate)">
                     <i class="fas fa-th-list"></i>
@@ -90,7 +97,7 @@ else
                 }
                 else
                 {
-                    <VideoRecorder SenderName="@(currentUser?.FirstName ?? "User")"
+                    <VideoRecorder ClientId="@currentUser?.UserId.ToString()" SenderName="@(currentUser?.FirstName ?? "User")"
                                    OnVideoRecorded="HandleVideoRecorded"
                                    OnVideoSent="HandleVideoSent" />
                 }
@@ -261,7 +268,46 @@ else
             top: auto;
             height: 20rem;
         }
+
+
     }
+
+    .connection-status {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+        .connection-status.connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .connection-status.connecting {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .connection-status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .connection-status.reconnecting {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+
+        .connection-status.failed {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
 </style>
 
 @code {
@@ -276,24 +322,50 @@ else
     private List<VideoMessage> _incomingMessages = new();
     private List<VideoMessage> _outgoingMessages = new();
     private VideoMessage? _selectedIncomingMessage;
-     private bool isAuthenticated = false;
+    private bool isAuthenticated = false;
     private LoginResponseDto? currentUser;
+    private WebSocketConnectionStatus _connectionStatus = WebSocketConnectionStatus.Disconnected;
 
     protected override async Task OnInitializedAsync()
     {
-           isAuthenticated = await AuthService.IsAuthenticatedAsync();
-        
+        isAuthenticated = await AuthService.IsAuthenticatedAsync();
+
         if (!isAuthenticated)
         {
             NavigationManager.NavigateTo("/login", true);
             return;
         }
-        
+
         currentUser = await AuthService.GetCurrentUserAsync();
-        
+
+        WebSocketService.OnConnectionStatusChanged += OnConnectionStatusChanged;
+        WebSocketService.OnVideoMessageReceived += OnVideoMessageReceived;
+
+        // Connect to WebSocket
+        if (currentUser?.UserId != null)
+        {
+            await WebSocketService.ConnectAsync(currentUser.UserId.ToString());
+        }
 
         await LoadMessages();
     }
+    private async void OnVideoMessageReceived(VideoMessage message)
+    {
+        await InvokeAsync(async () =>
+        {
+            await LoadMessages();
+            StateHasChanged();
+        });
+    }
+    private async void OnConnectionStatusChanged(WebSocketConnectionStatus status)
+    {
+        await InvokeAsync(() =>
+        {
+            _connectionStatus = status;
+            StateHasChanged();
+        });
+    }
+
         private async Task HandleLogout()
     {
         await AuthService.LogoutAsync();
@@ -343,5 +415,45 @@ else
         _outgoingMessages.Add(videoMessage);
         await LoadMessages(); // Refresh incoming messages to include the new video
         StateHasChanged();
+    }
+
+
+    private string GetConnectionStatusClass()
+    {
+        return _connectionStatus switch
+        {
+            WebSocketConnectionStatus.Connected => "connected",
+            WebSocketConnectionStatus.Connecting => "connecting",
+            WebSocketConnectionStatus.Disconnected => "disconnected",
+            WebSocketConnectionStatus.Reconnecting => "reconnecting",
+            WebSocketConnectionStatus.Failed => "failed",
+            _ => "disconnected"
+        };
+    }
+
+    private string GetConnectionStatusIcon()
+    {
+        return _connectionStatus switch
+        {
+            WebSocketConnectionStatus.Connected => "fas fa-circle",
+            WebSocketConnectionStatus.Connecting => "fas fa-spinner fa-spin",
+            WebSocketConnectionStatus.Disconnected => "fas fa-circle",
+            WebSocketConnectionStatus.Reconnecting => "fas fa-sync fa-spin",
+            WebSocketConnectionStatus.Failed => "fas fa-exclamation-triangle",
+            _ => "fas fa-circle"
+        };
+    }
+
+    private string GetConnectionStatusText()
+    {
+        return _connectionStatus switch
+        {
+            WebSocketConnectionStatus.Connected => "Connected",
+            WebSocketConnectionStatus.Connecting => "Connecting",
+            WebSocketConnectionStatus.Disconnected => "Disconnected",
+            WebSocketConnectionStatus.Reconnecting => "Reconnecting",
+            WebSocketConnectionStatus.Failed => "Connection Failed",
+            _ => "Disconnected"
+        };
     }
 }

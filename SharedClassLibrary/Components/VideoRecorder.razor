@@ -129,7 +129,10 @@
         }
     </div>
 </div>
-
+<button class="control-btn" @onclick="HandleDownloadTest">
+    <i class="fas fa-download"></i>
+    Download Test
+</button>
 <style>
     .countdown-overlay {
         position: absolute;
@@ -246,7 +249,27 @@
     private int _recordingTime = 0; // in seconds
     private string _pauseThumbnailUrl = string.Empty;
     private string previewUrl = string.Empty;
-
+    private async Task HandleDownloadTest()
+    {
+        try
+        {
+            var success = await VideoService.DownloadVideoForTestingAsync();
+            if (success)
+            {
+                ToastService.ShowSuccess("Video downloaded successfully!");
+            }
+            else
+            {
+                ToastService.ShowError("Failed to download video");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error downloading video: {ex.Message}");
+        }
+    }
+    [Parameter]
+    public string ClientId { get; set; } = string.Empty;
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -426,23 +449,35 @@
 
     private async Task HandleSend()
     {
-        if (_hasRecording)
+        if (_hasRecording && !string.IsNullOrEmpty(ClientId))
         {
-            _recordingTimer?.Dispose();
-            
-            var videoMessage = await VideoService.SaveRecordingAsync(SenderName);
-            _isRecording = false;
-            _isPaused = false;
-            _hasRecording = false;
-            _showPreview = false;
-            _currentRecording = null;
-            _recordingTime = 0;
-            _pauseThumbnailUrl = string.Empty;
-            
-            StateHasChanged();
-            await OnVideoSent.InvokeAsync(videoMessage);
+            try
+            {
+                _recordingTimer?.Dispose();
+
+                var videoMessage = await VideoService.SaveRecordingAsync(SenderName, ClientId);
+                _isRecording = false;
+                _isPaused = false;
+                _hasRecording = false;
+                _showPreview = false;
+                _currentRecording = null;
+                _recordingTime = 0;
+                _pauseThumbnailUrl = string.Empty;
+
+                ToastService.ShowSuccess(videoMessage);
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                ToastService.ShowError($"Failed to upload video: {ex.Message}");
+            }
+        }
+        else if (string.IsNullOrEmpty(ClientId))
+        {
+            ToastService.ShowError("Client ID is required");
         }
     }
+
 
     private string FormatTime(int seconds)
     {
