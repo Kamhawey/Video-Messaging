@@ -27,13 +27,13 @@ else
 {
     <div class="video-messaging-container">
         <header class="app-header">
-            <h1 CL>Chat</h1>
+            <h1 style="margin-left:25rem">Chat</h1>
             <div class="header-controls">
                 <div class="connection-status @GetConnectionStatusClass()">
                     <i class="@GetConnectionStatusIcon()"></i>
                     <span>@GetConnectionStatusText()</span>
                 </div>
-
+        
                 <button class="display-mode-btn @(_displayMode == DisplayMode.Separate ? "active" : "")"
                         @onclick="() => SetDisplayMode(DisplayMode.Separate)">
                     <i class="fas fa-th-list"></i>
@@ -78,15 +78,13 @@ else
             <div class="message-content">
                 @if (_currentMessageType == MessageType.Incoming)
                 {
-                    @if (_incomingMessages.Any())
-                    {
+                 
                         @if (_selectedIncomingMessage != null)
                         {
-                            <VideoPlayer VideoUrl="@_selectedIncomingMessage.VideoUrl"
-                                         SenderName="@_selectedIncomingMessage.SenderName"
-                                         OnPlaybackStateChanged="HandlePlaybackStateChanged" />
+                            <VideoPlayer ImageBase64="@_selectedIncomingMessage.ImageBase64"
+                                         />
                         }
-                    }
+                    
                     else
                     {
                         <div class="no-message">
@@ -109,15 +107,13 @@ else
                 <div class="incoming-section">
                     <h3>Incoming</h3>
                     <div class="message-content">
-                        @if (_incomingMessages.Any())
-                        {
+                   
                             @if (_selectedIncomingMessage != null)
                             {
-                                <VideoPlayer VideoUrl="@_selectedIncomingMessage.VideoUrl"
-                                             SenderName="@_selectedIncomingMessage.SenderName"
-                                             OnPlaybackStateChanged="HandlePlaybackStateChanged" />
+                                <VideoPlayer ImageBase64="@_selectedIncomingMessage.ImageBase64"
+                                           />
                             }
-                        }
+                        
                         else
                         {
                             <div class="no-message">
@@ -131,7 +127,7 @@ else
                 <div class="outgoing-section">
                     <h3>Outgoing</h3>
                     <div class="message-content">
-                        <VideoRecorder SenderName="@(currentUser?.FirstName ?? "User")"
+                        <VideoRecorder ClientId="@currentUser?.UserId.ToString()" SenderName="@(currentUser?.FirstName ?? "User")"
                                        OnVideoRecorded="HandleVideoRecorded"
                                        OnVideoSent="HandleVideoSent" />
                     </div>
@@ -319,7 +315,7 @@ else
 
     private DisplayMode _displayMode = DisplayMode.Separate;
     private MessageType _currentMessageType = MessageType.Incoming;
-    private List<VideoMessage> _incomingMessages = new();
+    // private List<VideoMessage> _incomingMessages = new();
     private List<VideoMessage> _outgoingMessages = new();
     private VideoMessage? _selectedIncomingMessage;
     private bool isAuthenticated = false;
@@ -341,21 +337,17 @@ else
         WebSocketService.OnConnectionStatusChanged += OnConnectionStatusChanged;
         WebSocketService.OnVideoMessageReceived += OnVideoMessageReceived;
 
-        // Connect to WebSocket
         if (currentUser?.UserId != null)
         {
-            await WebSocketService.ConnectAsync(currentUser.UserId.ToString());
+            await WebSocketService.ConnectAsync();
         }
 
         await LoadMessages();
     }
     private async void OnVideoMessageReceived(VideoMessage message)
     {
-        await InvokeAsync(async () =>
-        {
-            await LoadMessages();
-            StateHasChanged();
-        });
+        _selectedIncomingMessage = message;
+        await  InvokeAsync(StateHasChanged);
     }
     private async void OnConnectionStatusChanged(WebSocketConnectionStatus status)
     {
@@ -374,9 +366,9 @@ else
     private async Task LoadMessages()
     {
         var allMessages = await VideoService.GetVideoMessagesAsync();
-        _incomingMessages = allMessages.Where(m => m.IsIncoming).ToList();
+        // _incomingMessages = allMessages.Where(m => m.IsIncoming).ToList();
         _outgoingMessages = allMessages.Where(m => !m.IsIncoming).ToList();
-        _selectedIncomingMessage = _incomingMessages.LastOrDefault();
+        // _selectedIncomingMessage = _incomingMessages.LastOrDefault();
         StateHasChanged();
     }
 

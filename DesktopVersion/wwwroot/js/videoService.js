@@ -449,6 +449,7 @@ export function cleanup() {
             URL.revokeObjectURL(recordedVideoUrl);
             recordedVideoUrl = null;
         }
+        uploadedVideoFile = null;
 
         // Clear recorded chunks
         recordedChunks = [];
@@ -485,34 +486,60 @@ export function getElementBoundingRect(elementId) {
 // Get video blob data for IFormFile conversion
 export async function getVideoBlob() {
     try {
-        if (!recordedVideoUrl) {
-            console.error('No recorded video URL available');
+        let blob;
+        let mimeType;
+        let filename;
+
+        if (uploadedVideoFile) {
+            // Use uploaded file
+            blob = uploadedVideoFile;
+            mimeType = uploadedVideoFile.type;
+            filename = uploadedVideoFile.name;
+        } else if (recordedVideoUrl) {
+            // Use recorded video
+            const response = await fetch(recordedVideoUrl);
+            blob = await response.blob();
+            mimeType = mediaRecorder ? mediaRecorder.mimeType : 'video/webm';
+            const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
+            filename = `recorded_video_${Date.now()}.${extension}`;
+        } else {
+            console.error('No video available');
             return null;
         }
-
-        // Fetch the blob from the object URL
-        const response = await fetch(recordedVideoUrl);
-        const blob = await response.blob();
-
-        // Get the MIME type from the MediaRecorder
-        const mimeType = mediaRecorder ? mediaRecorder.mimeType : 'video/webm';
 
         // Convert blob to array buffer
         const arrayBuffer = await blob.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
 
-        // Generate filename based on MIME type
-        const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
-        const filename = `recorded_video_${Date.now()}.${extension}`;
-
         return {
-            data: Array.from(uint8Array), // Convert to regular array for serialization
+            data: Array.from(uint8Array),
             mimeType: mimeType,
             filename: filename,
             size: blob.size
         };
     } catch (error) {
         console.error('Error getting video blob:', error);
+        return null;
+    }
+}
+export async function getVideoAsDataUrl() {
+    try {
+        if (!recordedVideoUrl) {
+            console.error('No recorded video URL available');
+            return null;
+        }
+
+        const response = await fetch(recordedVideoUrl);
+        const blob = await response.blob();
+
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    } catch (error) {
+        console.error('Error getting video as data URL:', error);
         return null;
     }
 }
@@ -543,6 +570,76 @@ export function downloadVideoFile() {
         return true;
     } catch (error) {
         console.error('Error downloading video file:', error);
+        return false;
+    }
+}
+
+window.toggleFullscreen = (element) => {
+    if (!document.fullscreenElement) {
+        element.requestFullscreen().catch(err => {
+            console.error('Error attempting to enable fullscreen:', err);
+        });
+    } else {
+        document.exitFullscreen();
+    }
+};
+
+
+let uploadedVideoFile = null;
+
+// Open file dialog
+export function openFileDialog() {
+    try {
+        const fileInput = document.getElementById('videoFileInput');
+        if (fileInput) {
+            fileInput.click();
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('Error opening file dialog:', error);
+        return false;
+    }
+}
+
+// Handle uploaded video
+export async function handleUploadedVideo() {
+    try {
+        const fileInput = document.getElementById('videoFileInput');
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            return false;
+        }
+
+        const file = fileInput.files[0];
+
+        // Validate file type
+        if (!file.type.startsWith('video/')) {
+            console.error('Selected file is not a video');
+            return false;
+        }
+
+        // Store the file and create URL
+        uploadedVideoFile = file;
+        recordedVideoUrl = URL.createObjectURL(file);
+
+        // Clear any existing recorded chunks since we're using uploaded video
+        recordedChunks = [];
+
+        console.log('Uploaded video processed:', file.name, file.type, file.size);
+        return true;
+    } catch (error) {
+        console.error('Error handling uploaded video:', error);
+        return false;
+    }
+}
+
+// Set uploaded video for preview
+export function setUploadedVideo(videoUrl) {
+    try {
+        recordedVideoUrl = videoUrl;
+        return true;
+    } catch (error) {
+        console.error('Error setting uploaded video:', error);
         return false;
     }
 }

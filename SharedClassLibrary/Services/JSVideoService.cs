@@ -1,4 +1,5 @@
-﻿using Microsoft.JSInterop;
+﻿using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using SharedClassLibrary.Models;
 using Video.Messaging.App.Models;
 
@@ -26,6 +27,13 @@ public interface IJSVideoService
 
     Task<VideoFileData?> GetVideoBlobAsync();
     Task<bool> DownloadVideoFileAsync();
+    Task<string> GetVideoAsDataUrlAsync();
+    Task ToggleFullScreen(ElementReference gifElement);
+
+    Task<bool> OpenFileDialogAsync();
+    Task<bool> HandleUploadedVideoAsync();
+    Task<bool> SetUploadedVideoAsync(string videoUrl);
+
 }
 
 public class JSVideoService : IJSVideoService, IAsyncDisposable
@@ -36,6 +44,73 @@ public class JSVideoService : IJSVideoService, IAsyncDisposable
     public JSVideoService(IJSRuntime jsRuntime)
     {
         _jsRuntime = jsRuntime;
+    }
+    public async Task<bool> OpenFileDialogAsync()
+    {
+        try
+        {
+            var module = await GetJSModule();
+            return await module.InvokeAsync<bool>("openFileDialog");
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> HandleUploadedVideoAsync()
+    {
+        try
+        {
+            var module = await GetJSModule();
+            return await module.InvokeAsync<bool>("handleUploadedVideo");
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> SetUploadedVideoAsync(string videoUrl)
+    {
+        try
+        {
+            var module = await GetJSModule();
+            return await module.InvokeAsync<bool>("setUploadedVideo", videoUrl);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    public async Task ToggleFullScreen(ElementReference gifElement)
+    {
+
+        try
+        {
+            var module = await GetJSModule();
+
+            await module.InvokeVoidAsync("toggleFullscreen", gifElement);
+        }
+        catch
+        {
+
+        }
+
+
+    }
+
+    public async Task<string> GetVideoAsDataUrlAsync()
+    {
+        try
+        {
+            var module = await GetJSModule();
+            return await module.InvokeAsync<string>("getVideoAsDataUrl") ?? string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
     public async Task<VideoFileData?> GetVideoBlobAsync()
     {

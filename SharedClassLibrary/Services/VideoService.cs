@@ -12,6 +12,8 @@ public interface IVideoService
     Task<bool> PauseRecordingAsync();
     Task<bool> ResumeRecordingAsync();
     Task<string> SaveRecordingAsync(string senderName, string clientId);
+
+
     Task<bool> DiscardRecordingAsync();
     Task<VideoMessage> RetakeRecordingAsync();
     Task<string> GetPreviewUrlAsync();
@@ -32,7 +34,6 @@ public class VideoService : IVideoService
         if (videoData == null || videoData.Data.Length == 0)
             return null;
 
-        // Convert int array back to byte array
         var byteArray = videoData.Data.Select(x => (byte)x).ToArray();
         var stream = new MemoryStream(byteArray);
 
@@ -83,8 +84,6 @@ public class VideoService : IVideoService
         try
         {
             var uploadResult = await _videoApiService.UploadVideoAsync(videoFile, clientId);
-
-
             return uploadResult;
         }
         catch (Exception ex)
@@ -92,7 +91,6 @@ public class VideoService : IVideoService
             throw new Exception($"Failed to upload video: {ex.Message}");
         }
     }
-
     public async Task<bool> DiscardRecordingAsync()
     {
         var success = await _jsVideoService.StopMediaRecordingAsync();
@@ -110,14 +108,12 @@ public class VideoService : IVideoService
         return new VideoMessage
         {
             Id = Guid.NewGuid(),
-            SenderName = "Retake",
-            CreatedAt = DateTime.UtcNow
         };
     }
 
     public async Task<string> GetPreviewUrlAsync()
     {
-        return await _jsVideoService.GetRecordedVideoUrlAsync();
+        return await _jsVideoService.GetVideoAsDataUrlAsync();
     }
 
     public async Task<List<VideoMessage>> GetVideoMessagesAsync()
@@ -131,11 +127,9 @@ public class VideoService : IVideoService
         if (message != null)
         {
             _videoMessages.Remove(message);
-            // Revoke the object URL to free memory
-            if (!string.IsNullOrEmpty(message.VideoUrl))
-            {
-                await _jsVideoService.CleanupAsync();
-            }
+
+            await _jsVideoService.CleanupAsync();
+
             return true;
         }
         return false;

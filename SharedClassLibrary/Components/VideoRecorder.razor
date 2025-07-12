@@ -50,8 +50,7 @@
                 }
                 else if (_hasRecording && _showPreview)
                 {
-                    <video id="recordedPreview" controls style="width: 100%; max-height: 450px;position: absolute;z-index: 100">
-                        <source src="@previewUrl" type="video/mp4" />
+                    <video id="recordedPreview" controls style="width: 100%; max-height: 450px;position: absolute;z-index: 100" src="@previewUrl">
                         Your browser does not support the video tag.
                     </video>
                 }
@@ -114,11 +113,23 @@
                 <i class="fas fa-trash"></i>
                 Discard
             </button>
-            
-            <button class="control-btn success" @onclick="HandleSend">
-                <i class="fas fa-paper-plane"></i>
-                Send
-            </button>
+
+            @if (_isUploading)
+            {
+                <div class="upload-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill-animated"></div>
+                    </div>
+                    <span>Uploading...</span>
+                </div>
+            }
+            else
+            {
+                <button class="control-btn success" @onclick="HandleSend">
+                    <i class="fas fa-paper-plane"></i>
+                    Send
+                </button>
+            }
         }
         else if (_showCountdown)
         {
@@ -128,11 +139,24 @@
             </button>
         }
     </div>
+
+    <div class="upload-section">
+        <input type="file"
+               id="videoFileInput"
+               accept="video/*"
+               style="display: none;"
+               @onchange="HandleFileUpload" />
+
+        @if (!_isRecording && !_isPaused && !_hasRecording && !_showCountdown)
+        {
+            <button class="control-btn secondary" @onclick="OpenFileDialog">
+                <i class="fas fa-upload"></i>
+                Upload Video
+            </button>
+        }
+    </div>
 </div>
-<button class="control-btn" @onclick="HandleDownloadTest">
-    <i class="fas fa-download"></i>
-    Download Test
-</button>
+
 <style>
     .countdown-overlay {
         position: absolute;
@@ -160,10 +184,12 @@
             transform: scale(0.5);
             opacity: 0;
         }
+
         50% {
             transform: scale(1.2);
             opacity: 1;
         }
+
         100% {
             transform: scale(1);
             opacity: 1;
@@ -206,10 +232,10 @@
     }
 
     .pause-thumbnail {
-       width: 100%;
-    height: 100%;
-    border-radius: 8px;
-    object-fit: contain;
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
+        object-fit: contain;
     }
 
     .thumbnail-label {
@@ -230,6 +256,72 @@
         display: inline-block;
         width: 100%;
     }
+
+    .upload-progress {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .progress-bar {
+        width: 200px;
+        height: 20px;
+        background-color: #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background-color: #4CAF50;
+        transition: width 0.3s ease;
+    }
+
+    .upload-progress {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .progress-bar {
+        width: 200px;
+        height: 20px;
+        background-color: #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .progress-fill-animated {
+        height: 100%;
+        background: linear-gradient(45deg, #4CAF50, #45a049, #4CAF50);
+        background-size: 20px 20px;
+        animation: progress-animation 1.5s linear infinite;
+        width: 100%;
+    }
+
+    @@keyframes progress-animation {
+        0%
+
+    {
+        background-position: 0 0;
+    }
+
+    100% {
+        background-position: 20px 0;
+    }
+
+    }
+
+    .upload-section {
+        margin-top: 10px;
+    }
+
+
+    
+
 </style>
 
 @code {
@@ -268,6 +360,33 @@
             ToastService.ShowError($"Error downloading video: {ex.Message}");
         }
     }
+    private async Task OpenFileDialog()
+    {
+        await JSVideoService.OpenFileDialogAsync();
+    }
+
+    private async Task HandleFileUpload(ChangeEventArgs e)
+    {
+        var files = e.Value?.ToString();
+        if (!string.IsNullOrEmpty(files))
+        {
+            var success = await JSVideoService.HandleUploadedVideoAsync();
+            if (success)
+            {
+                _hasRecording = true;
+                _isRecording = false;
+                _isPaused = false;
+                _showPreview = false;
+                StateHasChanged();
+            }
+            else
+            {
+                ToastService.ShowError("Failed to process uploaded video");
+            }
+        }
+    }
+    private bool _isUploading = false;
+
     [Parameter]
     public string ClientId { get; set; } = string.Empty;
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -394,7 +513,7 @@
         }
     }
 
-    private async Task TogglePreview ()
+    private async Task TogglePreview()
     {
         if (_showPreview)
         {
@@ -404,9 +523,22 @@
         }
         else
         {
-            // Show preview
-            _showPreview = true;
+            // Show preview - get data URL for desktop compatibility
             previewUrl = await VideoService.GetPreviewUrlAsync();
+
+            if (!string.IsNullOrEmpty(previewUrl))
+            {
+                _showPreview = true;
+                StateHasChanged();
+
+                // Initialize video element after DOM update
+                await Task.Delay(100);
+                await JSVideoService.InitializeVideoElementAsync("recordedPreview");
+            }
+            else
+            {
+                ToastService.ShowError("Failed to load video preview");
+            }
         }
     }
 
@@ -454,8 +586,11 @@
             try
             {
                 _recordingTimer?.Dispose();
+                _isUploading = true;
+                StateHasChanged();
 
                 var videoMessage = await VideoService.SaveRecordingAsync(SenderName, ClientId);
+
                 _isRecording = false;
                 _isPaused = false;
                 _hasRecording = false;
@@ -463,13 +598,16 @@
                 _currentRecording = null;
                 _recordingTime = 0;
                 _pauseThumbnailUrl = string.Empty;
+                _isUploading = false;
 
                 ToastService.ShowSuccess(videoMessage);
                 StateHasChanged();
             }
             catch (Exception ex)
             {
+                _isUploading = false;
                 ToastService.ShowError($"Failed to upload video: {ex.Message}");
+                StateHasChanged();
             }
         }
         else if (string.IsNullOrEmpty(ClientId))
@@ -477,7 +615,6 @@
             ToastService.ShowError("Client ID is required");
         }
     }
-
 
     private string FormatTime(int seconds)
     {

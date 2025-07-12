@@ -23,9 +23,10 @@ public class VideoApiService : IVideoApiService
 
     public async Task<string> UploadVideoAsync(IFormFile videoFile, string clientId)
     {
+        clientId = "45f88501-bde5-4d5e-9227-52392d3c8253";
         using var content = new MultipartFormDataContent();
-        var fileContent = new StreamContent(videoFile.OpenReadStream());
 
+        var fileContent = new StreamContent(videoFile.OpenReadStream());
         var mimeType = videoFile.ContentType;
         if (mimeType.Contains(';'))
         {
@@ -33,6 +34,14 @@ public class VideoApiService : IVideoApiService
         }
 
         fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mimeType);
+
+        // Add explicit Content-Disposition header
+        fileContent.Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("form-data")
+        {
+            Name = "file",
+            FileName = videoFile.FileName
+        };
+
         content.Add(fileContent, "file", videoFile.FileName);
         content.Add(new StringContent(clientId), "client_id");
 
@@ -43,6 +52,8 @@ public class VideoApiService : IVideoApiService
             return await response.Content.ReadAsStringAsync();
         }
 
-        throw new Exception($"Upload failed: {response.StatusCode}");
+        // Log the error response for debugging
+        var errorContent = await response.Content.ReadAsStringAsync();
+        throw new Exception($"Upload failed: {response.StatusCode} - {errorContent}");
     }
 }
