@@ -15,56 +15,11 @@
 
 </style>
 <div class="video-player-container">
-    <div class="video-display">
-        <img src="data:image/gif;base64,@ImageBase64" alt="Sign Language GIF" class="video-element" />
+    <div class="video-display" style="background:white">
+        <img src="data:image/gif;base64,@ImageBase64" style="object-fit:contain;background:white" alt="Sign Language GIF" class="video-element" />
 
     </div>
 
-    <!-- Progress Bar -->
-    <div class="progress-container">
-        <div id="progress-bar" class="progress-bar" @onclick="HandleProgressClick" @onmousedown="StartSeeking" @onmouseup="StopSeeking">
-            <div class="progress-fill" style="width: @GetProgressPercentage()%"></div>
-            <div class="progress-handle" style="left: @GetProgressPercentage()%"></div>
-        </div>
-        <div class="time-display">
-            <span>@FormatTime(_playbackState.CurrentTime)</span>
-            <span>@FormatTime(_playbackState.Duration)</span>
-        </div>
-    </div>
-
-    <div class="video-controls">
-        <button class="control-btn" @onclick="HandleReplay">
-            <i class="fas fa-redo"></i>
-            Replay
-        </button>
-
-        <button class="control-btn" @onclick="HandleBackward">
-            <i class="fas fa-backward"></i>
-            -10s
-        </button>
-
-        <button class="control-btn" @onclick="HandlePlayPause">
-            @if (_playbackState.IsPlaying)
-            {
-                <i class="fas fa-pause"></i>
-                <span>Pause</span>
-            }
-            else
-            {
-                <i class="fas fa-play"></i>
-                <span>Play</span>
-            }
-        </button>
-
-        <button class="control-btn" @onclick="HandleForward">
-            <i class="fas fa-forward"></i>
-            +10s
-        </button>
-
-        <button class="control-btn" @onclick="HandleSpeedChange">
-            @(_playbackState.PlaybackSpeed.ToString("0.##"))x
-        </button>
-    </div>
 </div>
 
 @code {
@@ -86,16 +41,7 @@
         _progressTimer.Start();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        // if (firstRender && !string.IsNullOrEmpty(VideoUrl))
-        // {
-        //     await JSVideoService.InitializeVideoElementAsync("videoPlayer");
-        //     // Load the video source
-        //     await JSVideoService.PlayVideoAsync("videoPlayer", VideoUrl);
-        //     await JSVideoService.PauseVideoAsync("videoPlayer"); // Pause immediately to just load
-        // }
-    }
+
 
     private async Task UpdateProgress()
     {

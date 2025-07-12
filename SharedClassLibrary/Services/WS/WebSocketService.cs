@@ -10,7 +10,7 @@ namespace SharedClassLibrary.Services.WS;
 
 public interface IWebSocketService
 {
-    Task ConnectAsync(string userId);
+    Task ConnectAsync();
     Task DisconnectAsync();
     event Action<VideoMessage> OnVideoMessageReceived;
     event Action<WebSocketConnectionStatus> OnConnectionStatusChanged;
@@ -56,14 +56,14 @@ public class WebSocketService : IWebSocketService
     {
         _baseUrl = options.Value.BaseUrl;
     }
-    public async Task ConnectAsync(string userId)
+    public async Task ConnectAsync()
     {
         if (_webSocket?.State == WebSocketState.Open)
         {
             await DisconnectAsync();
         }
 
-        _userId = userId;
+        var connectionId = "45f88501-bde5-4d5e-9227-52392d3c8253";
         ConnectionStatus = WebSocketConnectionStatus.Connecting;
 
         try
@@ -73,7 +73,7 @@ public class WebSocketService : IWebSocketService
 
             _webSocket.Options.SetRequestHeader("ngrok-skip-browser-warning", "true");
 
-            var uri = new Uri($"{_baseUrl}{userId}");
+            var uri = new Uri($"{_baseUrl}{connectionId}");
             await _webSocket.ConnectAsync(uri, _cancellationTokenSource.Token);
 
             ConnectionStatus = WebSocketConnectionStatus.Connected;
@@ -132,63 +132,78 @@ public class WebSocketService : IWebSocketService
     }
     private async Task ListenForMessages()
     {
-        var buffer = new byte[1024 * 1024];
-
         try
         {
             while (_webSocket?.State == WebSocketState.Open && !_cancellationTokenSource!.Token.IsCancellationRequested)
             {
-                var result = await _webSocket.ReceiveAsync(
-                    new ArraySegment<byte>(buffer),
-                    _cancellationTokenSource.Token);
+                using var stream = new MemoryStream();
+                WebSocketReceiveResult result;
+
+                do
+                {
+                    var buffer = new byte[1024 * 8];
+                    result = await _webSocket.ReceiveAsync(
+                        new ArraySegment<byte>(buffer),
+                        _cancellationTokenSource.Token);
+
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        ConnectionStatus = WebSocketConnectionStatus.Disconnected;
+                        return;
+                    }
+
+                    await stream.WriteAsync(buffer, 0, result.Count);
+
+                } while (!result.EndOfMessage);
 
                 if (result.MessageType == WebSocketMessageType.Text)
                 {
-                    var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-
-                    try
-                    {
-                        var response = JsonSerializer.Deserialize<JsonElement>(message);
-                        if (response.TryGetProperty("type", out var typeElement) &&
-                            typeElement.GetString() == "sign_language_result")
-                        {
-                            var dataElement = response.GetProperty("data");
-                            var imgBase64 = dataElement.GetProperty("img").GetString();
-
-                            var videoMessage = new VideoMessage
-                            {
-                                ImageBase64 = imgBase64 ?? string.Empty,
-                                Timestamp = DateTime.UtcNow,
-                                IsIncoming = true
-                            };
-
-                            OnVideoMessageReceived?.Invoke(videoMessage);
-                        }
-                    }
-                    catch (JsonException ex)
-                    {
-                        Console.WriteLine($"Failed to deserialize message: {ex.Message}");
-                    }
-                }
-                else if (result.MessageType == WebSocketMessageType.Close)
-                {
-                    ConnectionStatus = WebSocketConnectionStatus.Disconnected;
-                    break;
+                    var messageBytes = stream.ToArray();
+                    var message = Encoding.UTF8.GetString(messageBytes);
+                    await ProcessMessage(message);
                 }
             }
         }
         catch (OperationCanceledException)
         {
+            // Normal cancellation
         }
         catch (WebSocketException ex)
         {
             Console.WriteLine($"WebSocket error: {ex.Message}");
             ConnectionStatus = WebSocketConnectionStatus.Failed;
-
             if (!_cancellationTokenSource!.Token.IsCancellationRequested)
             {
                 await AttemptReconnect();
             }
+        }
+    }
+    private async Task ProcessMessage(string message)
+    {
+        try
+        {
+            var response = JsonSerializer.Deserialize<JsonElement>(message);
+            if (response.TryGetProperty("type", out var typeElement) &&
+                typeElement.GetString() == "sign_language_result")
+            {
+                var dataElement = response.GetProperty("data");
+                var imgBase64 = dataElement.GetProperty("img").GetString();
+
+                var videoMessage = new VideoMessage
+                {
+                    ImageBase64 = imgBase64 ?? string.Empty,
+                    Timestamp = DateTime.UtcNow,
+                    IsIncoming = true
+                };
+
+                OnVideoMessageReceived?.Invoke(videoMessage);
+            }
+        }
+        catch (JsonException ex)
+        {
+            Console.WriteLine($"JSON parsing error: {ex.Message}");
+            var preview = message.Length > 1000 ? message.Substring(0, 1000) + "..." : message;
+            Console.WriteLine($"Message preview: {preview}");
         }
     }
 
@@ -203,7 +218,7 @@ public class WebSocketService : IWebSocketService
 
         try
         {
-            await ConnectAsync(_userId);
+            await ConnectAsync();
         }
         catch
         {

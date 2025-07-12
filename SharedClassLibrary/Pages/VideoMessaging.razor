@@ -33,10 +33,7 @@ else
                     <i class="@GetConnectionStatusIcon()"></i>
                     <span>@GetConnectionStatusText()</span>
                 </div>
-                <button class="type-btn" @onclick="TestMockMessage">
-                    <i class="fas fa-vial"></i>
-                    Test Mock
-                </button>
+        
                 <button class="display-mode-btn @(_displayMode == DisplayMode.Separate ? "active" : "")"
                         @onclick="() => SetDisplayMode(DisplayMode.Separate)">
                     <i class="fas fa-th-list"></i>
@@ -85,7 +82,7 @@ else
                         @if (_selectedIncomingMessage != null)
                         {
                             <VideoPlayer ImageBase64="@_selectedIncomingMessage.ImageBase64"
-                                         OnPlaybackStateChanged="HandlePlaybackStateChanged" />
+                                         />
                         }
                     
                     else
@@ -114,7 +111,7 @@ else
                             @if (_selectedIncomingMessage != null)
                             {
                                 <VideoPlayer ImageBase64="@_selectedIncomingMessage.ImageBase64"
-                                             OnPlaybackStateChanged="HandlePlaybackStateChanged" />
+                                           />
                             }
                         
                         else
@@ -342,7 +339,7 @@ else
 
         if (currentUser?.UserId != null)
         {
-            await WebSocketService.ConnectAsync(currentUser.UserId.ToString());
+            await WebSocketService.ConnectAsync();
         }
 
         await LoadMessages();
@@ -360,20 +357,7 @@ else
             StateHasChanged();
         });
     }
-    private async Task TestMockMessage()
-    {
-        try
-        {
-            // Read your res.json file content
 
-            var jsonContent = await File.ReadAllTextAsync("res.json");
-            await WebSocketService.MockReceiveMessage(jsonContent);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to load mock data: {ex.Message}");
-        }
-    }
         private async Task HandleLogout()
     {
         await AuthService.LogoutAsync();

@@ -118,9 +118,9 @@
             {
                 <div class="upload-progress">
                     <div class="progress-bar">
-                        <div class="progress-fill" style="width: @(_uploadProgress)%"></div>
+                        <div class="progress-fill-animated"></div>
                     </div>
-                    <span>Uploading... @(_uploadProgress)%</span>
+                    <span>Uploading...</span>
                 </div>
             }
             else
@@ -136,6 +136,22 @@
             <button class="control-btn danger" @onclick="HandleCancelCountdown">
                 <i class="fas fa-times"></i>
                 Cancel
+            </button>
+        }
+    </div>
+
+    <div class="upload-section">
+        <input type="file"
+               id="videoFileInput"
+               accept="video/*"
+               style="display: none;"
+               @onchange="HandleFileUpload" />
+
+        @if (!_isRecording && !_isPaused && !_hasRecording && !_showCountdown)
+        {
+            <button class="control-btn secondary" @onclick="OpenFileDialog">
+                <i class="fas fa-upload"></i>
+                Upload Video
             </button>
         }
     </div>
@@ -261,6 +277,51 @@
         background-color: #4CAF50;
         transition: width 0.3s ease;
     }
+
+    .upload-progress {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .progress-bar {
+        width: 200px;
+        height: 20px;
+        background-color: #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .progress-fill-animated {
+        height: 100%;
+        background: linear-gradient(45deg, #4CAF50, #45a049, #4CAF50);
+        background-size: 20px 20px;
+        animation: progress-animation 1.5s linear infinite;
+        width: 100%;
+    }
+
+    @@keyframes progress-animation {
+        0%
+
+    {
+        background-position: 0 0;
+    }
+
+    100% {
+        background-position: 20px 0;
+    }
+
+    }
+
+    .upload-section {
+        margin-top: 10px;
+    }
+
+
+    
+
 </style>
 
 @code {
@@ -299,8 +360,32 @@
             ToastService.ShowError($"Error downloading video: {ex.Message}");
         }
     }
+    private async Task OpenFileDialog()
+    {
+        await JSVideoService.OpenFileDialogAsync();
+    }
+
+    private async Task HandleFileUpload(ChangeEventArgs e)
+    {
+        var files = e.Value?.ToString();
+        if (!string.IsNullOrEmpty(files))
+        {
+            var success = await JSVideoService.HandleUploadedVideoAsync();
+            if (success)
+            {
+                _hasRecording = true;
+                _isRecording = false;
+                _isPaused = false;
+                _showPreview = false;
+                StateHasChanged();
+            }
+            else
+            {
+                ToastService.ShowError("Failed to process uploaded video");
+            }
+        }
+    }
     private bool _isUploading = false;
-    private int _uploadProgress = 0;
 
     [Parameter]
     public string ClientId { get; set; } = string.Empty;
@@ -502,17 +587,9 @@
             {
                 _recordingTimer?.Dispose();
                 _isUploading = true;
-                _uploadProgress = 0;
                 StateHasChanged();
 
-                // Create a progress callback
-                var progress = new Progress<int>(value =>
-                {
-                    _uploadProgress = value;
-                    InvokeAsync(StateHasChanged);
-                });
-
-                var videoMessage = await VideoService.SaveRecordingAsync(SenderName, ClientId, progress);
+                var videoMessage = await VideoService.SaveRecordingAsync(SenderName, ClientId);
 
                 _isRecording = false;
                 _isPaused = false;
