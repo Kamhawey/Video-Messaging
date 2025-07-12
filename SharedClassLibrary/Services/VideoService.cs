@@ -109,8 +109,6 @@ public class VideoService : IVideoService
         return new VideoMessage
         {
             Id = Guid.NewGuid(),
-            SenderName = "Retake",
-            CreatedAt = DateTime.UtcNow
         };
     }
 
@@ -130,11 +128,9 @@ public class VideoService : IVideoService
         if (message != null)
         {
             _videoMessages.Remove(message);
-            // Revoke the object URL to free memory
-            if (!string.IsNullOrEmpty(message.VideoUrl))
-            {
-                await _jsVideoService.CleanupAsync();
-            }
+
+            await _jsVideoService.CleanupAsync();
+
             return true;
         }
         return false;

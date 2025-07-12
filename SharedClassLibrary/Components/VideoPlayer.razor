@@ -16,10 +16,7 @@
 </style>
 <div class="video-player-container">
     <div class="video-display">
-        <video autoplay="false" preload="metadata" id="videoPlayer" @ref="videoElement" class="video-element">
-            <source src="@VideoUrl" type="video/mp4" />
-            Your browser does not support the video tag.
-        </video>
+        <img src="data:image/gif;base64,@ImageBase64" alt="Sign Language GIF" class="video-element" />
 
     </div>
 
@@ -71,8 +68,7 @@
 </div>
 
 @code {
-    [Parameter] public string VideoUrl { get; set; } = string.Empty;
-    [Parameter] public string SenderName { get; set; } = string.Empty;
+    [Parameter] public string ImageBase64 { get; set; } = string.Empty;
     [Parameter] public EventCallback<PlaybackState> OnPlaybackStateChanged { get; set; }
 
     private ElementReference videoElement;
@@ -92,13 +88,13 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !string.IsNullOrEmpty(VideoUrl))
-        {
-            await JSVideoService.InitializeVideoElementAsync("videoPlayer");
-            // Load the video source
-            await JSVideoService.PlayVideoAsync("videoPlayer", VideoUrl);
-            await JSVideoService.PauseVideoAsync("videoPlayer"); // Pause immediately to just load
-        }
+        // if (firstRender && !string.IsNullOrEmpty(VideoUrl))
+        // {
+        //     await JSVideoService.InitializeVideoElementAsync("videoPlayer");
+        //     // Load the video source
+        //     await JSVideoService.PlayVideoAsync("videoPlayer", VideoUrl);
+        //     await JSVideoService.PauseVideoAsync("videoPlayer"); // Pause immediately to just load
+        // }
     }
 
     private async Task UpdateProgress()
@@ -150,8 +146,8 @@
         }
         else
         {
-            await VideoPlayerService.PlayAsync(VideoUrl);
-            await JSVideoService.PlayVideoAsync("videoPlayer", VideoUrl);
+            // await VideoPlayerService.PlayAsync(VideoUrl);
+            // await JSVideoService.PlayVideoAsync("videoPlayer", VideoUrl);
             _playbackState.IsPlaying = true;
         }
         StateHasChanged();

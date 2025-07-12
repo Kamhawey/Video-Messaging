@@ -12,10 +12,10 @@ public interface IWebSocketService
 {
     Task ConnectAsync(string userId);
     Task DisconnectAsync();
-    Task SendVideoMessageAsync(VideoMessage message);
     event Action<VideoMessage> OnVideoMessageReceived;
     event Action<WebSocketConnectionStatus> OnConnectionStatusChanged;
     WebSocketConnectionStatus ConnectionStatus { get; }
+    Task MockReceiveMessage(string jsonContent);
 }
 
 public enum WebSocketConnectionStatus
@@ -104,24 +104,35 @@ public class WebSocketService : IWebSocketService
         _webSocket?.Dispose();
         _cancellationTokenSource?.Dispose();
     }
-
-    public async Task SendVideoMessageAsync(VideoMessage message)
+    public async Task MockReceiveMessage(string jsonContent)
     {
-        if (_webSocket?.State != WebSocketState.Open)
+        try
         {
-            throw new InvalidOperationException("WebSocket is not connected");
+            var response = JsonSerializer.Deserialize<JsonElement>(jsonContent);
+            if (response.TryGetProperty("type", out var typeElement) &&
+                typeElement.GetString() == "sign_language_result")
+            {
+                var dataElement = response.GetProperty("data");
+                var imgBase64 = dataElement.GetProperty("img").GetString();
+
+                var videoMessage = new VideoMessage
+                {
+                    ImageBase64 = imgBase64 ?? string.Empty,
+                    Timestamp = DateTime.UtcNow,
+                    IsIncoming = true
+                };
+
+                OnVideoMessageReceived?.Invoke(videoMessage);
+            }
         }
-
-        var json = JsonSerializer.Serialize(message);
-        var bytes = Encoding.UTF8.GetBytes(json);
-        var buffer = new ArraySegment<byte>(bytes);
-
-        await _webSocket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+        catch (JsonException ex)
+        {
+            Console.WriteLine($"Failed to deserialize mock message: {ex.Message}");
+        }
     }
-
     private async Task ListenForMessages()
     {
-        var buffer = new byte[1024 * 4];
+        var buffer = new byte[1024 * 1024];
 
         try
         {
@@ -137,9 +148,20 @@ public class WebSocketService : IWebSocketService
 
                     try
                     {
-                        var videoMessage = JsonSerializer.Deserialize<VideoMessage>(message);
-                        if (videoMessage != null)
+                        var response = JsonSerializer.Deserialize<JsonElement>(message);
+                        if (response.TryGetProperty("type", out var typeElement) &&
+                            typeElement.GetString() == "sign_language_result")
                         {
+                            var dataElement = response.GetProperty("data");
+                            var imgBase64 = dataElement.GetProperty("img").GetString();
+
+                            var videoMessage = new VideoMessage
+                            {
+                                ImageBase64 = imgBase64 ?? string.Empty,
+                                Timestamp = DateTime.UtcNow,
+                                IsIncoming = true
+                            };
+
                             OnVideoMessageReceived?.Invoke(videoMessage);
                         }
                     }
@@ -177,7 +199,6 @@ public class WebSocketService : IWebSocketService
 
         ConnectionStatus = WebSocketConnectionStatus.Reconnecting;
 
-        // Wait before attempting to reconnect
         await Task.Delay(5000);
 
         try

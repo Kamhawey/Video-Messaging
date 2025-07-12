@@ -7,9 +7,6 @@ public static class VideoMessageValidator
     public static bool IsValidVideoMessage(VideoMessage message)
     {
         if (message == null) return false;
-        if (string.IsNullOrWhiteSpace(message.SenderName)) return false;
-        if (message.Duration.TotalMinutes > Constants.MAX_RECORDING_DURATION_MINUTES) return false;
-        if (message.CreatedAt > DateTime.Now) return false;
 
         return true;
     }

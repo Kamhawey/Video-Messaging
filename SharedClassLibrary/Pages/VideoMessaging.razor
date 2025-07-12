@@ -33,7 +33,10 @@ else
                     <i class="@GetConnectionStatusIcon()"></i>
                     <span>@GetConnectionStatusText()</span>
                 </div>
-
+                <button class="type-btn" @onclick="TestMockMessage">
+                    <i class="fas fa-vial"></i>
+                    Test Mock
+                </button>
                 <button class="display-mode-btn @(_displayMode == DisplayMode.Separate ? "active" : "")"
                         @onclick="() => SetDisplayMode(DisplayMode.Separate)">
                     <i class="fas fa-th-list"></i>
@@ -78,15 +81,13 @@ else
             <div class="message-content">
                 @if (_currentMessageType == MessageType.Incoming)
                 {
-                    @if (_incomingMessages.Any())
-                    {
+                 
                         @if (_selectedIncomingMessage != null)
                         {
-                            <VideoPlayer VideoUrl="@_selectedIncomingMessage.VideoUrl"
-                                         SenderName="@_selectedIncomingMessage.SenderName"
+                            <VideoPlayer ImageBase64="@_selectedIncomingMessage.ImageBase64"
                                          OnPlaybackStateChanged="HandlePlaybackStateChanged" />
                         }
-                    }
+                    
                     else
                     {
                         <div class="no-message">
@@ -109,15 +110,13 @@ else
                 <div class="incoming-section">
                     <h3>Incoming</h3>
                     <div class="message-content">
-                        @if (_incomingMessages.Any())
-                        {
+                   
                             @if (_selectedIncomingMessage != null)
                             {
-                                <VideoPlayer VideoUrl="@_selectedIncomingMessage.VideoUrl"
-                                             SenderName="@_selectedIncomingMessage.SenderName"
+                                <VideoPlayer ImageBase64="@_selectedIncomingMessage.ImageBase64"
                                              OnPlaybackStateChanged="HandlePlaybackStateChanged" />
                             }
-                        }
+                        
                         else
                         {
                             <div class="no-message">
@@ -319,7 +318,7 @@ else
 
     private DisplayMode _displayMode = DisplayMode.Separate;
     private MessageType _currentMessageType = MessageType.Incoming;
-    private List<VideoMessage> _incomingMessages = new();
+    // private List<VideoMessage> _incomingMessages = new();
     private List<VideoMessage> _outgoingMessages = new();
     private VideoMessage? _selectedIncomingMessage;
     private bool isAuthenticated = false;
@@ -341,7 +340,6 @@ else
         WebSocketService.OnConnectionStatusChanged += OnConnectionStatusChanged;
         WebSocketService.OnVideoMessageReceived += OnVideoMessageReceived;
 
-        // Connect to WebSocket
         if (currentUser?.UserId != null)
         {
             await WebSocketService.ConnectAsync(currentUser.UserId.ToString());
@@ -351,11 +349,8 @@ else
     }
     private async void OnVideoMessageReceived(VideoMessage message)
     {
-        await InvokeAsync(async () =>
-        {
-            await LoadMessages();
-            StateHasChanged();
-        });
+        _selectedIncomingMessage = message;
+        await  InvokeAsync(StateHasChanged);
     }
     private async void OnConnectionStatusChanged(WebSocketConnectionStatus status)
     {
@@ -365,7 +360,20 @@ else
             StateHasChanged();
         });
     }
+    private async Task TestMockMessage()
+    {
+        try
+        {
+            // Read your res.json file content
 
+            var jsonContent = await File.ReadAllTextAsync("res.json");
+            await WebSocketService.MockReceiveMessage(jsonContent);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to load mock data: {ex.Message}");
+        }
+    }
         private async Task HandleLogout()
     {
         await AuthService.LogoutAsync();
@@ -374,9 +382,9 @@ else
     private async Task LoadMessages()
     {
         var allMessages = await VideoService.GetVideoMessagesAsync();
-        _incomingMessages = allMessages.Where(m => m.IsIncoming).ToList();
+        // _incomingMessages = allMessages.Where(m => m.IsIncoming).ToList();
         _outgoingMessages = allMessages.Where(m => !m.IsIncoming).ToList();
-        _selectedIncomingMessage = _incomingMessages.LastOrDefault();
+        // _selectedIncomingMessage = _incomingMessages.LastOrDefault();
         StateHasChanged();
     }
 
