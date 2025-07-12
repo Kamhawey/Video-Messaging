@@ -11,7 +11,9 @@ public interface IVideoService
     Task<bool> StopRecordingAsync();
     Task<bool> PauseRecordingAsync();
     Task<bool> ResumeRecordingAsync();
-    Task<string> SaveRecordingAsync(string senderName, string clientId);
+    Task<string> SaveRecordingAsync(string senderName, string clientId, IProgress<int> progress = null);
+
+
     Task<bool> DiscardRecordingAsync();
     Task<VideoMessage> RetakeRecordingAsync();
     Task<string> GetPreviewUrlAsync();
@@ -74,7 +76,7 @@ public class VideoService : IVideoService
         return await _jsVideoService.ResumeMediaRecordingAsync();
     }
 
-    public async Task<string> SaveRecordingAsync(string senderName, string clientId)
+    public async Task<string> SaveRecordingAsync(string senderName, string clientId, IProgress<int> progress = null)
     {
         var videoFile = await GetVideoAsFormFileAsync();
         if (videoFile == null)
@@ -82,9 +84,7 @@ public class VideoService : IVideoService
 
         try
         {
-            var uploadResult = await _videoApiService.UploadVideoAsync(videoFile, clientId);
-
-
+            var uploadResult = await _videoApiService.UploadVideoAsync(videoFile, clientId, progress);
             return uploadResult;
         }
         catch (Exception ex)
@@ -92,7 +92,6 @@ public class VideoService : IVideoService
             throw new Exception($"Failed to upload video: {ex.Message}");
         }
     }
-
     public async Task<bool> DiscardRecordingAsync()
     {
         var success = await _jsVideoService.StopMediaRecordingAsync();

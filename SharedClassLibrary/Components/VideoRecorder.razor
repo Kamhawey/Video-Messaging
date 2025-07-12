@@ -113,11 +113,23 @@
                 <i class="fas fa-trash"></i>
                 Discard
             </button>
-            
-            <button class="control-btn success" @onclick="HandleSend">
-                <i class="fas fa-paper-plane"></i>
-                Send
-            </button>
+
+            @if (_isUploading)
+            {
+                <div class="upload-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: @(_uploadProgress)%"></div>
+                    </div>
+                    <span>Uploading... @(_uploadProgress)%</span>
+                </div>
+            }
+            else
+            {
+                <button class="control-btn success" @onclick="HandleSend">
+                    <i class="fas fa-paper-plane"></i>
+                    Send
+                </button>
+            }
         }
         else if (_showCountdown)
         {
@@ -128,11 +140,128 @@
         }
     </div>
 </div>
-<button class="control-btn" @onclick="HandleDownloadTest">
-    <i class="fas fa-download"></i>
-    Download Test
-</button>
 
+<style>
+    .countdown-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 10;
+    }
+
+    .countdown-number {
+        font-size: 10rem;
+        font-weight: bold;
+        color: white;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        animation: countdown-pulse 1s ease-in-out;
+    }
+
+    @@keyframes countdown-pulse {
+        0% {
+            transform: scale(0.5);
+            opacity: 0;
+        }
+
+        50% {
+            transform: scale(1.2);
+            opacity: 1;
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .timer-overlay {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 5;
+    }
+
+    .timer-display {
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 14px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .timer-text {
+        min-width: 60px;
+        text-align: center;
+    }
+
+    .thumbnail-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 8;
+        text-align: center;
+    }
+
+    .pause-thumbnail {
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
+        object-fit: contain;
+    }
+
+    .thumbnail-label {
+        background-color: rgba(255, 255, 255, 0.9);
+        color: #333;
+        padding: 4px 8px;
+        border-radius: 4px;
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .video-container {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+    }
+
+    .upload-progress {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .progress-bar {
+        width: 200px;
+        height: 20px;
+        background-color: #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background-color: #4CAF50;
+        transition: width 0.3s ease;
+    }
+</style>
 
 @code {
     [Parameter] public string SenderName { get; set; } = string.Empty;
@@ -170,6 +299,9 @@
             ToastService.ShowError($"Error downloading video: {ex.Message}");
         }
     }
+    private bool _isUploading = false;
+    private int _uploadProgress = 0;
+
     [Parameter]
     public string ClientId { get; set; } = string.Empty;
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -369,8 +501,19 @@
             try
             {
                 _recordingTimer?.Dispose();
+                _isUploading = true;
+                _uploadProgress = 0;
+                StateHasChanged();
 
-                var videoMessage = await VideoService.SaveRecordingAsync(SenderName, ClientId);
+                // Create a progress callback
+                var progress = new Progress<int>(value =>
+                {
+                    _uploadProgress = value;
+                    InvokeAsync(StateHasChanged);
+                });
+
+                var videoMessage = await VideoService.SaveRecordingAsync(SenderName, ClientId, progress);
+
                 _isRecording = false;
                 _isPaused = false;
                 _hasRecording = false;
@@ -378,13 +521,16 @@
                 _currentRecording = null;
                 _recordingTime = 0;
                 _pauseThumbnailUrl = string.Empty;
+                _isUploading = false;
 
                 ToastService.ShowSuccess(videoMessage);
                 StateHasChanged();
             }
             catch (Exception ex)
             {
+                _isUploading = false;
                 ToastService.ShowError($"Failed to upload video: {ex.Message}");
+                StateHasChanged();
             }
         }
         else if (string.IsNullOrEmpty(ClientId))
@@ -392,7 +538,6 @@
             ToastService.ShowError("Client ID is required");
         }
     }
-
 
     private string FormatTime(int seconds)
     {

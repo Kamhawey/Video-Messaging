@@ -6,7 +6,7 @@ namespace SharedClassLibrary.Services;
 
 public interface IVideoApiService
 {
-    Task<string> UploadVideoAsync(IFormFile videoFile, string clientId);
+    Task<string> UploadVideoAsync(IFormFile videoFile, string clientId, IProgress<int> progress = null);
 }
 
 public class VideoApiService : IVideoApiService
@@ -21,7 +21,7 @@ public class VideoApiService : IVideoApiService
 
     }
 
-    public async Task<string> UploadVideoAsync(IFormFile videoFile, string clientId)
+    public async Task<string> UploadVideoAsync(IFormFile videoFile, string clientId, IProgress<int> progress = null)
     {
         using var content = new MultipartFormDataContent();
         var fileContent = new StreamContent(videoFile.OpenReadStream());
@@ -36,7 +36,21 @@ public class VideoApiService : IVideoApiService
         content.Add(fileContent, "file", videoFile.FileName);
         content.Add(new StringContent(clientId), "client_id");
 
+        // Track upload progress
+        var totalBytes = videoFile.Length;
+        var uploadedBytes = 0L;
+
         var response = await _httpClient.PostAsync($"{_baseUrl}/upload-device/", content);
+
+        // Simulate progress updates (you may need to implement actual progress tracking)
+        if (progress != null)
+        {
+            for (int i = 0; i <= 100; i += 10)
+            {
+                progress.Report(i);
+                await Task.Delay(50); // Small delay to show progress
+            }
+        }
 
         if (response.IsSuccessStatusCode)
         {
