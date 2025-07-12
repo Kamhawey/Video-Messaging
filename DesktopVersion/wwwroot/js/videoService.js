@@ -516,6 +516,27 @@ export async function getVideoBlob() {
         return null;
     }
 }
+export async function getVideoAsDataUrl() {
+    try {
+        if (!recordedVideoUrl) {
+            console.error('No recorded video URL available');
+            return null;
+        }
+
+        const response = await fetch(recordedVideoUrl);
+        const blob = await response.blob();
+
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    } catch (error) {
+        console.error('Error getting video as data URL:', error);
+        return null;
+    }
+}
 
 // Download video file (for testing purposes)
 export function downloadVideoFile() {

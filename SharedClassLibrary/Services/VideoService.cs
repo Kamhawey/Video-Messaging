@@ -117,7 +117,7 @@ public class VideoService : IVideoService
 
     public async Task<string> GetPreviewUrlAsync()
     {
-        return await _jsVideoService.GetRecordedVideoUrlAsync();
+        return await _jsVideoService.GetVideoAsDataUrlAsync();
     }
 
     public async Task<List<VideoMessage>> GetVideoMessagesAsync()

@@ -131,7 +131,7 @@ else
                 <div class="outgoing-section">
                     <h3>Outgoing</h3>
                     <div class="message-content">
-                        <VideoRecorder SenderName="@(currentUser?.FirstName ?? "User")"
+                        <VideoRecorder ClientId="@currentUser?.UserId.ToString()" SenderName="@(currentUser?.FirstName ?? "User")"
                                        OnVideoRecorded="HandleVideoRecorded"
                                        OnVideoSent="HandleVideoSent" />
                     </div>

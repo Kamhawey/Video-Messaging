@@ -50,8 +50,7 @@
                 }
                 else if (_hasRecording && _showPreview)
                 {
-                    <video id="recordedPreview" controls style="width: 100%; max-height: 450px;position: absolute;z-index: 100">
-                        <source src="@previewUrl" type="video/mp4" />
+                    <video id="recordedPreview" controls style="width: 100%; max-height: 450px;position: absolute;z-index: 100" src="@previewUrl">
                         Your browser does not support the video tag.
                     </video>
                 }
@@ -133,104 +132,7 @@
     <i class="fas fa-download"></i>
     Download Test
 </button>
-<style>
-    .countdown-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: rgba(0, 0, 0, 0.7);
-        z-index: 10;
-    }
 
-    .countdown-number {
-        font-size: 10rem;
-        font-weight: bold;
-        color: white;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-        animation: countdown-pulse 1s ease-in-out;
-    }
-
-    @@keyframes countdown-pulse {
-        0% {
-            transform: scale(0.5);
-            opacity: 0;
-        }
-        50% {
-            transform: scale(1.2);
-            opacity: 1;
-        }
-        100% {
-            transform: scale(1);
-            opacity: 1;
-        }
-    }
-
-    .timer-overlay {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        z-index: 5;
-    }
-
-    .timer-display {
-        background-color: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 8px 12px;
-        border-radius: 20px;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        font-family: 'Courier New', monospace;
-        font-weight: bold;
-        font-size: 14px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    .timer-text {
-        min-width: 60px;
-        text-align: center;
-    }
-
-    .thumbnail-overlay {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 8;
-        text-align: center;
-    }
-
-    .pause-thumbnail {
-       width: 100%;
-    height: 100%;
-    border-radius: 8px;
-    object-fit: contain;
-    }
-
-    .thumbnail-label {
-        background-color: rgba(255, 255, 255, 0.9);
-        color: #333;
-        padding: 4px 8px;
-        border-radius: 4px;
-        margin-top: 8px;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 12px;
-        font-weight: bold;
-    }
-
-    .video-container {
-        position: relative;
-        display: inline-block;
-        width: 100%;
-    }
-</style>
 
 @code {
     [Parameter] public string SenderName { get; set; } = string.Empty;
@@ -394,7 +296,7 @@
         }
     }
 
-    private async Task TogglePreview ()
+    private async Task TogglePreview()
     {
         if (_showPreview)
         {
@@ -404,9 +306,22 @@
         }
         else
         {
-            // Show preview
-            _showPreview = true;
+            // Show preview - get data URL for desktop compatibility
             previewUrl = await VideoService.GetPreviewUrlAsync();
+
+            if (!string.IsNullOrEmpty(previewUrl))
+            {
+                _showPreview = true;
+                StateHasChanged();
+
+                // Initialize video element after DOM update
+                await Task.Delay(100);
+                await JSVideoService.InitializeVideoElementAsync("recordedPreview");
+            }
+            else
+            {
+                ToastService.ShowError("Failed to load video preview");
+            }
         }
     }
 

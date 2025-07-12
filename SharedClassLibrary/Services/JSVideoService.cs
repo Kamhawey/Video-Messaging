@@ -26,6 +26,8 @@ public interface IJSVideoService
 
     Task<VideoFileData?> GetVideoBlobAsync();
     Task<bool> DownloadVideoFileAsync();
+    Task<string> GetVideoAsDataUrlAsync();
+
 }
 
 public class JSVideoService : IJSVideoService, IAsyncDisposable
@@ -36,6 +38,18 @@ public class JSVideoService : IJSVideoService, IAsyncDisposable
     public JSVideoService(IJSRuntime jsRuntime)
     {
         _jsRuntime = jsRuntime;
+    }
+    public async Task<string> GetVideoAsDataUrlAsync()
+    {
+        try
+        {
+            var module = await GetJSModule();
+            return await module.InvokeAsync<string>("getVideoAsDataUrl") ?? string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
     public async Task<VideoFileData?> GetVideoBlobAsync()
     {
